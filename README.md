@@ -4,6 +4,8 @@
 
 [![License](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue)](LICENSE) [![Single File](https://img.shields.io/badge/build-none%20needed-brightgreen)](index.html) [![Deps](https://img.shields.io/badge/dependencies-0-orange)](index.html)
 
+### ▶ [在线试玩 · Play in browser](https://william-trader.github.io/crazy-water-world/)
+
 ---
 
 ## 中文
