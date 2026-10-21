@@ -6,6 +6,27 @@
 
 ### ▶ [在线试玩 · Play in browser](https://william-trader.github.io/crazy-water-world/)
 
+**当前版本：v0.2** · [全部发行版 / All releases](https://github.com/William-Trader/crazy-water-world/releases)
+
+### 版本
+
+| 版本 | 单文件下载 | 内容 | 发行版 |
+| --- | --- | --- | --- |
+| **v0.2**（当前） | [`crazy-water-world-v0.2.html`](versions/crazy-water-world-v0.2.html) | 连击、四技能、30+ 成就与图鉴、势力委托、本地排行榜、多结局 | [Release v0.2](https://github.com/William-Trader/crazy-water-world/releases/tag/v0.2) |
+| v0.1（原版保留） | [`crazy-water-world-v0.1.html`](versions/crazy-water-world-v0.1.html) | 初版：单文件、三模式、九槽位、BOSS 战 | [Release v0.1](https://github.com/William-Trader/crazy-water-world/releases/tag/v0.1) |
+
+> `index.html` 始终是最新版（在线试玩即 v0.2）。历史版本完整留在 `versions/`，可直接下载单文件离线玩。
+
+### v0.2 更新内容
+
+- **连击系统**：3 连击起有加成，5 连 1.5×、8 连 2× 并触发「暴击!」；伸手够不着会断连击
+- **四技能栏**：数字键 1–4 释放，独立冷却与 HUD 显示
+- **30+ 成就 + 图鉴**：打捞、战斗、生存、委托多线触发；图鉴收录模块与猛兽
+- **势力与委托**：四大势力贸易 + 定期随机委托，奖励晶核/零件
+- **本地排行榜**：前 8 名成绩存 localStorage（`cws_board`）
+- **多结局**：按分数与净水评级给出不同结局文本
+- **体验**：暂停/静音按钮、错误提示框、HUD 重排；快捷键 空格暂停 · B 改装 · T 势力 · Q 委托 · 1234 技能 · M 静音
+
 ---
 
 ## 中文
@@ -18,7 +39,7 @@
 
 **但是没有一个广告给过一秒实机演示。**
 
-行吧。既然你们不做，我做。于是就有了这个 —— 一个 152 KB 的单文件 HTML，双击就打，零依赖、零构建、零后端、零埋点（这次是真的没有）。
+行吧。既然你们不做，我做。于是就有了这个 —— 一个 152 KB 的单文件 HTML（v0.2 为 215 KB），双击就打，零依赖、零构建、零后端、零埋点（这次是真的没有）。
 
 ### 游戏是真的能玩的
 
@@ -69,7 +90,7 @@ open crazy-water-world/index.html   # macOS
 
 ### 技术
 
-- 单文件 HTML：约 3000 行，HTML + CSS + 原生 JS，无框架
+- 单文件 HTML：v0.2 约 3,665 行 / 215 KB（v0.1 为 2,992 行 / 152 KB），HTML + CSS + 原生 JS，无框架
 - Canvas 2D 渲染，1280×720 逻辑分辨率，按 16:9 自适应缩放，横屏移动端可玩
 - 程序化 BGM 与音效：WebAudio 现场合成，**仓库里没有一个音频文件**
 - 最高分存 localStorage（key `cws_best2`）
@@ -84,7 +105,7 @@ One day I was scrolling short videos and hit the 8,000th ad for a game called *C
 
 **Not one of those ads ever showed a single second of actual gameplay.**
 
-Fine. You won't make it, so I did. The result is a 152 KB single-file HTML game: no dependencies, no build step, no backend, and — for real this time — no telemetry.
+Fine. You won't make it, so I did. The result is a 152 KB single-file HTML game (215 KB as of v0.2): no dependencies, no build step, no backend, and — for real this time — no telemetry.
 
 ### It actually plays
 
@@ -107,6 +128,15 @@ Fine. You won't make it, so I did. The result is a 152 KB single-file HTML game:
 
 Click drifts to salvage · click beasts to fight back (cannons fire automatically) · click survivors to rescue · `Space` pause · `B` upgrade panel.
 
+### Versions
+
+| Version | Single file | Highlights | Release |
+| --- | --- | --- | --- |
+| **v0.2** (current) | [`crazy-water-world-v0.2.html`](versions/crazy-water-world-v0.2.html) | Combo meter, 4 active skills, 30+ achievements & codex, faction quests, local leaderboard, multiple endings | [v0.2](https://github.com/William-Trader/crazy-water-world/releases/tag/v0.2) |
+| v0.1 (original, preserved) | [`crazy-water-world-v0.1.html`](versions/crazy-water-world-v0.1.html) | First release: three modes, nine slots, boss fight | [v0.1](https://github.com/William-Trader/crazy-water-world/releases/tag/v0.1) |
+
+`index.html` always points at the latest build (GitHub Pages = v0.2); every past version stays in `versions/` as a downloadable single file.
+
 ### Run it
 
 ```bash
@@ -118,7 +148,7 @@ No npm install. No dev server. No env vars. It is one file.
 
 ### Tech
 
-- Single-file HTML, ~3000 lines, vanilla JS + Canvas 2D, no framework
+- Single-file HTML: ~3,665 lines / 215 KB in v0.2 (2,992 lines / 152 KB in v0.1), vanilla JS + Canvas 2D, no framework
 - 1280×720 logical resolution, 16:9 letterboxed scaling, landscape mobile supported
 - Procedural BGM and SFX synthesized live with WebAudio — **the repo contains zero audio files**
 - Best score persisted in localStorage (`cws_best2`)
