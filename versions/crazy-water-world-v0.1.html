@@ -1,0 +1,2992 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>疯狂水世界 · 开局一个移动公厕</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{width:100%;height:100%;overflow:hidden;background:#030d18;font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:#eaf6ff;letter-spacing:.2px}
+#app{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(circle at 50% 35%,#0a2c4a,#030d18)}
+#stage{position:relative;width:min(100vw,177.7778vh);height:min(100vh,56.25vw);overflow:hidden;background:#04162a;
+  box-shadow:0 0 70px rgba(0,0,0,.7),0 0 0 1px rgba(120,200,230,.15)}
+canvas{display:block;width:100%;height:100%;touch-action:none}
+.hidden{display:none!important}
+.hide{display:none!important}
+
+/* ================= HUD ================= */
+.hud{position:absolute;inset:0;pointer-events:none;z-index:10}
+.hud>*{pointer-events:auto}
+
+.glass{background:linear-gradient(180deg,rgba(8,32,54,.82),rgba(4,18,32,.88));
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(130,205,235,.22);border-radius:13px;
+  box-shadow:0 6px 20px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.08)}
+
+.topbar{position:absolute;top:0;left:0;right:0;display:flex;gap:9px;padding:10px 12px;align-items:flex-start}
+
+.vitals{padding:8px 11px;min-width:236px}
+.vrow{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.vrow:last-child{margin-bottom:0}
+.vico{font-size:12px;width:15px;text-align:center;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+.vname{font-size:10px;font-weight:900;color:#8fc9e4;width:24px;flex:0 0 24px;letter-spacing:0}
+.vtrack{flex:1;height:10px;border-radius:99px;background:rgba(0,0,0,.5);overflow:hidden;position:relative;
+  border:1px solid rgba(255,255,255,.14);box-shadow:inset 0 1px 3px rgba(0,0,0,.6)}
+.vfill{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:99px;transition:width .22s cubic-bezier(.4,0,.2,1)}
+.vfill::after{content:"";position:absolute;inset:0;border-radius:99px;
+  background:linear-gradient(180deg,rgba(255,255,255,.42),transparent 55%)}
+.vval{font-size:10px;font-weight:900;color:#dff1ff;width:44px;text-align:right;flex:0 0 44px;
+  font-variant-numeric:tabular-nums;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.f-hp{background:linear-gradient(90deg,#ff4d4d,#ff9f43)}
+.f-wa{background:linear-gradient(90deg,#12b5a8,#7fe3d8)}
+.f-fo{background:linear-gradient(90deg,#ffa726,#ffd54f)}
+.f-pw{background:linear-gradient(90deg,#2979ff,#80d8ff)}
+.f-ox{background:linear-gradient(90deg,#7c4dff,#b9a6ff)}
+.vrow.low .vfill{animation:blink .55s steps(2,end) infinite}
+@keyframes blink{50%{opacity:.35}}
+
+/* 广告式天数 UI */
+.adui{padding:7px 12px;text-align:center;min-width:150px}
+.adui .day{font-size:25px;font-weight:900;line-height:1;letter-spacing:1px;color:#fff;
+  text-shadow:0 3px 0 #06203a,0 0 18px rgba(255,210,63,.35)}
+.adui .day em{font-style:normal;color:#ffd23f}
+.adui .stars{font-size:12px;letter-spacing:2px;color:#ffd23f;margin-top:2px;text-shadow:0 0 8px rgba(255,210,63,.5)}
+.adui .meta{display:flex;gap:9px;justify-content:center;margin-top:3px;font-size:10px;font-weight:800;color:#9fd7ef}
+.adui .meta b{color:#fff}
+
+.right{margin-left:auto;display:flex;gap:6px;align-items:flex-start;flex-direction:column}
+.ibtn{width:33px;height:33px;border-radius:10px;display:grid;place-items:center;cursor:pointer;font-size:14px;
+  font-weight:900;color:#cfe9f8;transition:.15s}
+.ibtn:active{transform:scale(.92)}
+.ibtn.off{color:#547a90}
+
+/* 资源条 */
+.resbar{position:absolute;left:12px;bottom:56px;display:flex;gap:5px;flex-wrap:wrap;max-width:56%}
+.rc{display:flex;align-items:center;gap:4px;padding:5px 9px;border-radius:10px;font-size:12px;font-weight:900;
+  font-variant-numeric:tabular-nums;transition:transform .12s}
+.rc i{font-style:normal;font-size:13px}
+.rc.bump{animation:rcb .4s cubic-bezier(.3,1.6,.5,1)}
+@keyframes rcb{0%{transform:scale(1)}35%{transform:scale(1.28)}100%{transform:scale(1)}}
+
+/* 右下按钮组 */
+.acts{position:absolute;right:12px;bottom:56px;display:flex;flex-direction:column;gap:7px;align-items:flex-end}
+.bbtn{position:relative;background:linear-gradient(180deg,#ffd23f,#ff9f1c);color:#3a2200;font-weight:900;font-size:14px;
+  border:0;border-radius:14px;padding:11px 16px;box-shadow:0 4px 0 #b96a00,0 6px 14px rgba(0,0,0,.35);cursor:pointer;
+  display:flex;align-items:center;gap:6px;letter-spacing:.5px}
+.bbtn:active{transform:translateY(3px);box-shadow:0 1px 0 #b96a00}
+.bbtn.sm{padding:8px 12px;font-size:12.5px;box-shadow:0 3px 0 #b96a00}
+.bbtn.gray{background:linear-gradient(180deg,#4a7fa6,#2d5a7d);color:#eaf6ff;box-shadow:0 4px 0 #1d3c56}
+.bbtn.gray:active{box-shadow:0 1px 0 #1d3c56}
+.badge2{position:absolute;top:-7px;right:-7px;min-width:21px;height:21px;border-radius:99px;background:#ff4d4d;color:#fff;
+  font-size:11px;font-weight:900;display:grid;place-items:center;padding:0 5px;border:2px solid #04162a;
+  box-shadow:0 2px 6px rgba(0,0,0,.5);animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.14)}}
+
+/* 槽位九宫格 */
+.slots{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;display:grid;grid-template-columns:repeat(9,1fr);
+  gap:5px;padding:6px 8px;bottom:8px}
+.slot{width:34px;height:34px;border-radius:9px;background:rgba(0,0,0,.35);border:1.5px dashed rgba(150,205,230,.3);
+  display:grid;place-items:center;position:relative;transition:.2s}
+.slot svg{width:22px;height:22px;opacity:.32}
+.slot.on{background:rgba(46,196,182,.16);border:1.5px solid rgba(46,196,182,.65)}
+.slot.on svg{opacity:1}
+.slot.old{background:rgba(255,77,77,.16);border-color:rgba(255,77,77,.6)}
+.slot.old::after{content:"旧";position:absolute;top:-6px;right:-6px;font-size:9px;font-weight:900;background:#ff4d4d;
+  color:#fff;border-radius:5px;padding:0 3px;border:1px solid #04162a}
+.slot .lbl{position:absolute;bottom:-13px;left:50%;transform:translateX(-50%);font-size:8.5px;font-weight:900;color:#8fc9e4;white-space:nowrap}
+
+/* ================= BOSS 血条 ================= */
+.bossbar{position:absolute;top:78px;left:50%;transform:translateX(-50%);z-index:13;width:min(560px,84%);display:none}
+.bossbar.show{display:block;animation:tin .4s ease}
+.bossbar .bn{text-align:center;font-size:13px;font-weight:900;letter-spacing:3px;color:#ffd6a5;
+  text-shadow:0 2px 0 #7a0000,0 0 14px rgba(255,60,60,.6);margin-bottom:5px}
+.bossbar .bt{height:15px;border-radius:99px;background:rgba(0,0,0,.6);overflow:hidden;
+  border:2px solid rgba(255,120,120,.7);box-shadow:0 4px 16px rgba(0,0,0,.5),inset 0 1px 4px rgba(0,0,0,.7)}
+.bossbar .bt i{display:block;height:100%;width:100%;border-radius:99px;transition:width .18s ease;
+  background:linear-gradient(180deg,#ff6b6b,#c62828)}
+.bossbar .bt i::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.35),transparent 55%)}
+.bossbar .bp{text-align:center;font-size:11px;font-weight:900;color:#ffd6a5;margin-top:3px;letter-spacing:1px}
+
+/* ================= 弹幕 ================= */
+.danmu{position:absolute;top:96px;left:0;right:0;height:190px;overflow:hidden;pointer-events:none;z-index:12}
+.dm{position:absolute;white-space:nowrap;font-size:13px;font-weight:800;padding:3px 10px;border-radius:99px;
+  background:rgba(4,22,42,.72);border:1px solid rgba(130,205,235,.25);color:#dff1ff;
+  text-shadow:0 1px 3px rgba(0,0,0,.7);animation:dmr linear forwards}
+.dm.hot{background:rgba(255,77,77,.8);border-color:#fff;color:#fff}
+.dm.gold{background:rgba(255,159,28,.85);border-color:#fff;color:#3a2200}
+@keyframes dmr{from{transform:translateX(100%)}to{transform:translateX(-130%)}}
+
+/* ================= 提示 ================= */
+.toast{position:absolute;left:50%;top:80px;transform:translateX(-50%);z-index:22;display:flex;flex-direction:column;
+  gap:6px;align-items:center;pointer-events:none}
+.tst{padding:8px 15px;border-radius:11px;font-size:13px;font-weight:800;white-space:nowrap;animation:tin .3s cubic-bezier(.3,1.5,.5,1);
+  box-shadow:0 8px 22px rgba(0,0,0,.45)}
+.tst.warn{background:linear-gradient(180deg,#ff6b35,#d9480f);color:#fff;border:1px solid rgba(255,255,255,.4)}
+.tst.good{background:linear-gradient(180deg,#2ec4b6,#0f8f88);color:#fff;border:1px solid rgba(255,255,255,.4)}
+.tst.gold{background:linear-gradient(180deg,#ffd23f,#ff9f1c);color:#3a2200;border:1px solid rgba(255,255,255,.5)}
+@keyframes tin{from{opacity:0;transform:translateY(-14px) scale(.9)}to{opacity:1;transform:none}}
+
+/* ================= 剧情对话 ================= */
+.story{position:absolute;inset:0;z-index:34;display:none;place-items:end center;padding:0 0 34px}
+.story.show{display:grid}
+.storybox{width:min(760px,92%);padding:16px 18px 30px 116px;position:relative;
+  border:2.5px solid #06203a;border-radius:18px;
+  background:linear-gradient(180deg,#f7f3ea,#e6dfd0);color:#06203a;
+  box-shadow:0 18px 44px rgba(0,0,0,.6);animation:sup .3s cubic-bezier(.2,1.3,.4,1)}
+@keyframes sup{from{transform:translateY(46px);opacity:0}to{transform:none;opacity:1}}
+.storybox .who{position:absolute;left:14px;bottom:14px;width:88px;height:88px;border-radius:14px;border:3px solid #06203a;
+  background:#cfe9f8;overflow:hidden;box-shadow:0 4px 0 rgba(6,32,58,.35)}
+.storybox .who svg{width:100%;height:100%}
+.storybox .nm{position:absolute;left:14px;top:-15px;background:#ff6b35;color:#fff;font-weight:900;font-size:12.5px;
+  padding:3px 12px;border-radius:8px;border:2px solid #06203a;letter-spacing:1px}
+.storybox .txt{font-size:15px;font-weight:800;line-height:1.62;min-height:52px}
+.storybox .txt em{font-style:normal;color:#d9480f;background:linear-gradient(180deg,transparent 62%,#ffd23f 62%)}
+.storybox .nx{position:absolute;right:16px;bottom:9px;font-size:11.5px;font-weight:900;color:#7a6a52;animation:blink 1.1s steps(2) infinite}
+.storybox .nx b{color:#d9480f}
+.storybox .skip{position:absolute;right:14px;top:-14px;background:#06203a;color:#fff;border:2px solid #06203a;
+  font-size:11.5px;font-weight:900;padding:4px 12px;border-radius:9px;cursor:pointer;letter-spacing:1px;
+  box-shadow:0 3px 0 rgba(6,32,58,.35)}
+.storybox .skip:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(6,32,58,.35)}
+.storybox.fq{background:linear-gradient(180deg,#fff8e1,#ffe9b8);border-color:#8a5a2b}
+.storybox.ch{background:linear-gradient(180deg,#1b2a44,#0a1526);border-color:#ffd23f;color:#eaf6ff}
+.storybox.ch .txt em{color:#ffd23f;background:none}
+.storybox.ch .who{background:#16324f;border-color:#ffd23f}
+
+/* 选择 */
+.choice{position:absolute;inset:0;z-index:36;display:none;place-items:center;background:rgba(2,12,24,.8);
+  backdrop-filter:blur(6px);padding:20px}
+.choice.show{display:grid}
+.choicebox{width:min(700px,96%);text-align:center;animation:pop2 .34s cubic-bezier(.3,1.5,.5,1);max-height:92%;overflow:auto}
+.choicebox h2{font-size:23px;font-weight:900;letter-spacing:1px;text-shadow:0 3px 0 #06203a}
+.choicebox .lead{font-size:13px;color:#bfe4f7;margin:7px 0 16px;line-height:1.6}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:11px}
+.opt{background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.04));border:2px solid rgba(255,255,255,.18);
+  border-radius:16px;padding:14px 12px;cursor:pointer;transition:.18s;position:relative;overflow:hidden}
+.opt:hover{border-color:rgba(255,210,63,.6);transform:translateY(-3px)}
+.opt:active{transform:translateY(0) scale(.98)}
+.opt.rec{border-color:#ffd23f;background:linear-gradient(180deg,rgba(255,210,63,.2),rgba(255,210,63,.06))}
+.opt .oi{width:54px;height:54px;margin:0 auto 7px}
+.opt .oi svg{width:100%;height:100%}
+.opt b{display:block;font-size:15px;font-weight:900;color:#fff}
+.opt .od{font-size:11.5px;color:#a8cfe4;margin-top:4px;line-height:1.5}
+.opt .ogen{margin-top:6px;display:inline-block;font-size:10.5px;font-weight:900;padding:2px 8px;border-radius:6px;
+  background:#2ec4b6;color:#06203a}
+.opt .ogen.g0{background:#8d6e63;color:#fff}
+.opt .ogen.g1{background:#2ec4b6;color:#06203a}
+.opt .ogen.g2{background:#ffd23f;color:#3a2200}
+.opt .ogen.g3{background:#7c4dff;color:#fff}
+.opt .ogen.g4{background:#ff6b35;color:#fff}
+
+/* ================= 面板 ================= */
+.sheet{position:absolute;inset:0;z-index:32;display:none;align-items:flex-end;justify-content:center;
+  background:rgba(2,12,24,.72);backdrop-filter:blur(5px)}
+.sheet.show{display:flex}
+.sheetin{width:100%;max-width:720px;max-height:84%;overflow-y:auto;padding:14px 14px 22px;
+  background:linear-gradient(180deg,#0a3b5e,#06203a);border:2px solid rgba(255,210,63,.5);
+  border-radius:20px 20px 0 0;animation:up .3s cubic-bezier(.2,.9,.3,1)}
+@keyframes up{from{transform:translateY(46px);opacity:.4}to{transform:none;opacity:1}}
+.sheetin::-webkit-scrollbar{width:6px}
+.sheetin::-webkit-scrollbar-thumb{background:rgba(130,205,235,.3);border-radius:9px}
+.shd{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;gap:10px}
+.shd h3{font-size:17px;font-weight:900;letter-spacing:.5px}
+.shd p{font-size:11.5px;color:#9fd7ef;margin-top:2px}
+.xbtn{width:31px;height:31px;border-radius:9px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);
+  color:#fff;font-weight:900;cursor:pointer;flex:0 0 31px}
+.xbtn:active{transform:scale(.93)}
+.tabs{display:flex;gap:6px;margin-bottom:11px;flex-wrap:wrap}
+.tab{padding:6px 13px;border-radius:9px;font-size:12.5px;font-weight:900;cursor:pointer;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);color:#a8cfe4}
+.tab.on{background:rgba(255,210,63,.18);border-color:rgba(255,210,63,.6);color:#ffd23f}
+.grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:9px}
+.mcard{background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.14);border-radius:14px;padding:10px;
+  cursor:pointer;transition:.18s;position:relative;overflow:hidden}
+.mcard:active{transform:scale(.97)}
+.mcard.can{border-color:rgba(46,196,182,.6);background:rgba(46,196,182,.1)}
+.mcard.no{opacity:.5}
+.mcard.done{border-color:rgba(255,210,63,.55);background:rgba(255,210,63,.1)}
+.mcard .mh{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.mcard .mi{width:31px;height:31px;flex:0 0 31px}
+.mcard .mi svg{width:100%;height:100%}
+.mcard b{font-size:13.5px;font-weight:900;color:#fff}
+.mcard .md{font-size:11px;color:#a8cfe4;line-height:1.5;min-height:32px}
+.mcost{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px;font-size:11px;font-weight:800}
+.mcost span{padding:1px 6px;border-radius:6px;background:rgba(0,0,0,.32);border:1px solid rgba(255,255,255,.12)}
+.mcost span.ok{color:#8ff0e4;border-color:rgba(46,196,182,.5)}
+.mcost span.no{color:#ff9d9d;border-color:rgba(255,90,90,.4)}
+.mtag{position:absolute;top:6px;right:6px;font-size:10px;font-weight:900;padding:2px 6px;border-radius:6px;background:#ffd23f;color:#3a2200}
+.mtag.gen{background:#7c4dff;color:#fff}
+.mtag.out{background:#ff4d4d;color:#fff}
+
+/* 势力 */
+.fcard{background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.14);border-radius:14px;padding:11px}
+.fcard h4{font-size:14px;font-weight:900;display:flex;align-items:center;gap:6px}
+.fcard p{font-size:11px;color:#a8cfe4;margin:5px 0 8px;line-height:1.5}
+.frow{display:flex;gap:6px;flex-wrap:wrap}
+.fbtn{font-size:11.5px;font-weight:900;padding:6px 11px;border-radius:9px;cursor:pointer;border:1px solid rgba(255,255,255,.2);
+  background:rgba(255,255,255,.08);color:#eaf6ff}
+.fbtn:active{transform:scale(.96)}
+.fbtn:disabled{opacity:.4}
+.fbtn.buy{background:linear-gradient(180deg,#2ec4b6,#0f8f88);border-color:transparent;color:#fff}
+.fbtn.sell{background:linear-gradient(180deg,#ff9f1c,#e07b0a);border-color:transparent;color:#3a2200}
+
+/* ================= 弹层 ================= */
+.modal{position:absolute;inset:0;z-index:40;display:none;place-items:center;background:rgba(2,12,24,.82);
+  backdrop-filter:blur(6px);padding:18px}
+.modal.show{display:grid}
+.card{background:linear-gradient(180deg,#0a3b5e,#06203a);border:2px solid #ffd23f;border-radius:20px;padding:20px 18px;
+  text-align:center;max-width:400px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.65);max-height:90%;overflow-y:auto;
+  animation:pop2 .32s cubic-bezier(.3,1.5,.5,1)}
+@keyframes pop2{from{transform:scale(.84);opacity:0}to{transform:scale(1);opacity:1}}
+.bigbtn{width:100%;margin-top:11px;border:0;cursor:pointer;background:linear-gradient(180deg,#ffd23f,#ff9f1c);color:#3a2200;
+  font-weight:900;font-size:16px;padding:13px 0;border-radius:14px;box-shadow:0 4px 0 #b96a00;letter-spacing:1px}
+.bigbtn:active{transform:translateY(3px);box-shadow:0 1px 0 #b96a00}
+.gbtn{width:100%;margin-top:8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);color:#fff;
+  font-weight:800;padding:11px;border-radius:12px;cursor:pointer;font-size:13.5px}
+.rankbig{font-size:64px;font-weight:900;line-height:1;letter-spacing:2px;
+  background:linear-gradient(180deg,#fff8d0,#ff9f1c);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 4px 0 rgba(0,0,0,.3))}
+.res-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:13px 0;text-align:left}
+.res-i{background:rgba(255,255,255,.07);border-radius:10px;padding:8px 10px}
+.res-i b{display:block;font-size:16px;font-weight:900;color:#fff}
+.res-i span{font-size:11px;color:#9fd7ef}
+
+/* 引导 */
+.tut{position:absolute;left:50%;transform:translateX(-50%);bottom:112px;z-index:20;max-width:78%;padding:10px 15px;
+  border-radius:14px;font-size:13px;font-weight:800;line-height:1.55;text-align:center;
+  background:linear-gradient(180deg,rgba(8,32,54,.94),rgba(4,18,32,.96));border:1.5px solid rgba(255,210,63,.55);
+  box-shadow:0 10px 28px rgba(0,0,0,.55);display:none}
+.tut.show{display:block;animation:bob2 2.2s ease-in-out infinite}
+.tut em{font-style:normal;color:#ffd23f}
+@keyframes bob2{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-5px)}}
+
+/* 风暴预警 */
+.alarm{position:absolute;inset:0;pointer-events:none;z-index:24;display:none}
+.alarm.on{display:block;animation:alm .68s ease-in-out infinite}
+@keyframes alm{0%,100%{box-shadow:inset 0 0 60px rgba(255,40,40,.35)}50%{box-shadow:inset 0 0 120px rgba(255,40,40,.8)}}
+.alarmtxt{position:absolute;top:44%;left:50%;transform:translate(-50%,-50%);font-size:38px;font-weight:900;color:#fff;
+  text-shadow:0 0 24px #ff2020,0 4px 0 #7a0000;letter-spacing:4px;white-space:nowrap}
+
+/* 转场 */
+.wipe{position:absolute;inset:0;z-index:44;display:none;place-items:center;text-align:center;
+  background:radial-gradient(circle at 50% 45%,#0e6ea3,#04121f)}
+.wipe.show{display:grid;animation:wp .45s ease}
+@keyframes wp{from{opacity:0}to{opacity:1}}
+.wipe .day{font-size:15px;font-weight:900;color:#ffd23f;letter-spacing:6px;margin-bottom:8px}
+.wipe h2{font-size:38px;font-weight:900;letter-spacing:5px;text-shadow:0 4px 0 #06203a,0 0 40px rgba(255,210,63,.3)}
+.wipe p{margin-top:12px;font-size:14px;color:#bfe4f7;font-weight:700;line-height:1.7}
+.wipe .bar{width:230px;height:8px;border-radius:99px;background:rgba(0,0,0,.5);margin:18px auto 0;overflow:hidden;
+  border:1px solid rgba(255,255,255,.2)}
+.wipe .bar i{display:block;height:100%;background:linear-gradient(90deg,#ffd23f,#ff6b35);animation:wipeb 1.5s ease forwards}
+@keyframes wipeb{from{width:0}to{width:100%}}
+
+/* 字幕（口播） */
+.sub{position:absolute;left:50%;transform:translateX(-50%);bottom:96px;z-index:26;max-width:80%;text-align:center;
+  padding:9px 18px;border-radius:12px;background:rgba(2,12,24,.78);border:1px solid rgba(255,210,63,.4);
+  font-size:15px;font-weight:900;line-height:1.55;display:none;text-shadow:0 2px 6px rgba(0,0,0,.8)}
+.sub.show{display:block;animation:tin .3s ease}
+.sub em{font-style:normal;color:#ffd23f}
+
+/* 开场 */
+.start{position:absolute;inset:0;z-index:50;display:grid;place-items:center;padding:20px;
+  background:radial-gradient(circle at 50% 34%,#0e6ea3,#04121f)}
+.start .logo{font-size:clamp(34px,8vw,60px);font-weight:900;letter-spacing:5px;text-align:center;line-height:1.05;
+  text-shadow:0 5px 0 #06203a,0 0 50px rgba(255,210,63,.35)}
+.start .logo em{font-style:normal;color:#ffd23f}
+.start .tag{margin-top:10px;text-align:center;font-size:14px;font-weight:900;color:#ffd6a5;letter-spacing:1px}
+.start .tips{margin-top:16px;font-size:12.5px;color:#a8cfe4;text-align:center;line-height:1.95;max-width:440px}
+.start .best{margin-top:12px;text-align:center;font-size:12px;color:#8ff0e4;font-weight:900}
+.modepick{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px;max-width:400px}
+.mdbtn{padding:9px 6px;border-radius:12px;font-size:12px;font-weight:900;cursor:pointer;text-align:center;
+  background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.16);color:#cfe9f8;transition:.15s}
+.mdbtn.on{background:rgba(255,210,63,.2);border-color:#ffd23f;color:#ffd23f}
+.mdbtn small{display:block;font-size:10px;font-weight:700;opacity:.75;margin-top:2px}
+.startbtn{max-width:330px;margin:16px auto 0;display:block;transition:transform .12s}
+.startbtn:active{transform:scale(.97)}
+.startbtn.busy{opacity:.6;pointer-events:none}
+
+/* 扫描线（广告模式） */
+.scan{position:absolute;inset:0;z-index:14;pointer-events:none;display:none;opacity:.16;
+  background:repeating-linear-gradient(180deg,rgba(255,255,255,.14) 0 1px,transparent 1px 3px)}
+.scan.on{display:block}
+.live{position:absolute;top:11px;left:50%;transform:translateX(-50%);z-index:16;display:none;gap:6px;align-items:center;
+  font-size:11px;font-weight:900;color:#fff;padding:4px 11px;border-radius:99px;background:rgba(255,77,77,.9);
+  border:1px solid rgba(255,255,255,.5);letter-spacing:1px}
+.live.on{display:flex}
+.live i{font-style:normal;width:8px;height:8px;border-radius:99px;background:#fff;animation:blink 1s steps(2) infinite}
+
+#errbox{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:99;display:none;
+  max-width:80%;padding:14px 18px;border-radius:14px;background:rgba(120,10,10,.95);border:2px solid #ff6b6b;
+  color:#fff;font-size:13px;font-weight:800;line-height:1.6;box-shadow:0 12px 30px rgba(0,0,0,.6)}
+#errbox b{display:block;font-size:15px;margin-bottom:6px;color:#ffd6a5}
+
+.rotate{position:absolute;inset:0;z-index:60;display:none;place-items:center;background:#030d18;text-align:center;padding:30px}
+.rotate.show{display:grid}
+.rotate div{font-size:15px;font-weight:900;line-height:1.8}
+
+@media (max-width:900px){
+  .vitals{min-width:186px}
+  .vname{width:20px;flex:0 0 20px;font-size:9px}
+  .vval{width:38px;flex:0 0 38px;font-size:9px}
+  .adui{min-width:118px;padding:6px 9px}
+  .adui .day{font-size:20px}
+  .slots{gap:3px;padding:5px 6px;bottom:8px}
+  .slot{width:27px;height:27px}
+  .slot svg{width:18px;height:18px}
+  .slot .lbl{font-size:7.5px;bottom:-11px}
+  .rc{font-size:11px;padding:4px 7px}
+  .bbtn{font-size:13px;padding:10px 13px}
+  .storybox{padding:14px 14px 14px 92px}
+  .storybox .who{width:70px;height:70px;left:11px;bottom:11px}
+  .storybox .txt{font-size:13.5px}
+  .tut{font-size:12px;bottom:66px}
+  .resbar{max-width:50%;bottom:50px}
+  .acts{bottom:50px}
+  .tut{bottom:100px}
+}
+@media (max-height:440px){
+  .topbar{padding:6px 8px;gap:7px}
+  .resbar{bottom:50px}.acts{bottom:50px;right:8px}.slots{bottom:6px}
+  .tut{bottom:98px;font-size:12px}
+}
+</style>
+</head>
+<body>
+<div id="app"><div id="stage">
+  <canvas id="cv"></canvas>
+  <div class="scan" id="scan"></div>
+
+  <div class="hud">
+    <div class="topbar">
+      <div class="glass vitals" id="vitals"></div>
+      <div class="glass adui">
+        <div class="day" id="v-day">第 <em>1</em> 天</div>
+        <div class="stars" id="v-star">☆☆☆</div>
+        <div class="meta"><span>人口 <b id="v-ppl">0</b></span><span>收获 <b id="v-gain">0</b></span><span>航程 <b id="v-dist">0</b>nm</span></div>
+      </div>
+      <div class="right">
+        <div class="glass ibtn" id="b-snd" title="音效">🔊</div>
+        <div class="glass ibtn" id="b-pause" title="暂停">⏸</div>
+      </div>
+    </div>
+
+    <div class="bossbar" id="bossbar"><div class="bn" id="boss-n"></div><div class="bt"><i id="boss-i"></i></div><div class="bp" id="boss-p"></div></div>
+    <div class="live" id="live"><i></i>LIVE 买量中</div>
+    <div class="danmu" id="danmu"></div>
+
+    <div class="glass slots" id="slots"></div>
+    <div class="resbar" id="resbar"></div>
+
+    <div class="acts">
+      <button class="bbtn" id="b-trade">🏴 势力交易<span class="badge2 hidden" id="b-tradedot">!</span></button>
+      <button class="bbtn" id="b-build">🔧 改装<span class="badge2 hidden" id="b-dot">1</span></button>
+    </div>
+
+    <div class="tut" id="tut"></div>
+    <div class="toast" id="toast"></div>
+    <div class="sub" id="sub"></div>
+    <div class="alarm" id="alarm"><div class="alarmtxt" id="alarmtxt"></div></div>
+  </div>
+
+  <div class="wipe" id="wipe">
+    <div>
+      <div class="day" id="wipe-day">海上生存</div>
+      <h2 id="wipe-h">第 1 天</h2>
+      <p id="wipe-p"></p>
+      <div class="bar"><i></i></div>
+    </div>
+  </div>
+
+  <div class="story" id="story"><div class="storybox" id="storybox">
+    <div class="nm" id="s-nm">肥强</div>
+    <div class="who" id="s-who"></div>
+    <div class="txt" id="s-txt"></div>
+    <div class="skip" id="s-skip">跳过剧情 ▸▶</div>
+    <div class="nx">▼ <b>点击画面任意处</b> 继续</div>
+  </div></div>
+
+  <div class="choice" id="choice"><div class="choicebox">
+    <h2 id="c-h">末日开局，你先捞哪个？</h2>
+    <div class="lead" id="c-lead"></div>
+    <div class="opts" id="c-opts"></div>
+  </div></div>
+
+  <div class="sheet" id="sheet"><div class="sheetin">
+    <div class="shd"><div><h3 id="sh-t">🔧 自由改装</h3><p id="sh-s"></p></div><button class="xbtn" id="b-close">✕</button></div>
+    <div class="tabs" id="sh-tabs"></div>
+    <div id="sh-body"></div>
+  </div></div>
+
+  <div class="modal" id="modal"><div class="card" id="modal-card"></div></div>
+
+  <div class="start" id="start">
+    <div>
+      <div class="logo">疯狂<em>水世界</em></div>
+      <div class="tag">⚡ 开局一个移动公厕 · 三分钟一局 ⚡</div>
+      <div class="tips">
+        打捞海面漂来的物资 → 一寸寸改装你的据点<br>
+        装海水过滤器才有淡水，撑过深海猛兽与黑潮风暴<br>
+        把公厕改成 <b style="color:#ffd23f">S 级避难所</b>，开进新海域
+      </div>
+      <div class="modepick" id="modepick">
+        <div class="mdbtn on" data-m="0">普通<small>轻松上手</small></div>
+        <div class="mdbtn" data-m="1">广告模式<small>弹幕轰炸·禁暂停</small></div>
+        <div class="mdbtn" data-m="2">硬核<small>失败物资清零</small></div>
+      </div>
+      <div class="best" id="best"></div>
+      <button class="bigbtn startbtn" id="b-start">开始漂流 →</button>
+      <div style="text-align:center;margin-top:11px;font-size:11px;color:#7fa8c4;line-height:1.7">
+        点击捞物资 · 点击猛兽反击 · 收留漂来的幸存者 · 空格暂停 · B 键改装
+      </div>
+    </div>
+  </div>
+
+  <div id="errbox"><b>⚠ 出问题了</b><span id="errtxt"></span></div>
+  <div class="rotate" id="rotate"><div>📱 请横屏游玩<br><span style="font-size:12px;opacity:.7">旋转设备以获得完整体验</span></div></div>
+</div></div>
+<script>
+
+"use strict";
+//=====================================================================
+//  疯狂水世界 · 开局一个移动公厕  v2  大厂级实现
+//=====================================================================
+const W=1280, H=720, SEA=478;
+const cv=document.getElementById('cv');
+const ctx=cv.getContext('2d',{alpha:false});
+const $=id=>document.getElementById(id);
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const lerp=(a,b,t)=>a+(b-a)*t;
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const ri=(a,b)=>Math.floor(rnd(a,b+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const chance=p=>Math.random()<p;
+const now=()=>performance.now();
+function mixc(c1,c2,t){
+  const p=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+  const a=p(c1),b=p(c2);
+  return 'rgb('+Math.round(lerp(a[0],b[0],t))+','+Math.round(lerp(a[1],b[1],t))+','+Math.round(lerp(a[2],b[2],t))+')';
+}
+function esc(s){ return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+//=====================================================================
+//  配置
+//=====================================================================
+const CFG={
+  hp0:130, wa0:100, fo0:100, pw0:0, pwmax0:40, ox0:100,
+  waMax:100, foMax:100, oxMax:100,
+  waDrain:0.80, foDrain:0.60,
+  starve:3.0,
+  reach0:215,
+  clickDmg:15,
+  dayLen:1.0,          // 章节内天数推进速度（视觉）
+  refresh:[2.0,3.4],   // 漂浮物刷新
+  beastFirst:40, beastEvery:26,
+  stormFirst:78, stormEvery:[66,86], stormWarn:10, stormDur:15,
+  beastGrow:1.6, stormGrow:0.5
+};
+const RES=[
+  {k:'wood',n:'木板',i:'🪵',c:'#c98a4b'},
+  {k:'iron', n:'废铁',i:'🔩',c:'#c2ced6'},
+  {k:'plas', n:'塑料',i:'🧴',c:'#7fe3d8'},
+  {k:'rope', n:'绳索',i:'🪢',c:'#e0c893'},
+  {k:'cloth',n:'破布',i:'🧣',c:'#d98cb3'},
+  {k:'fish', n:'鱼获',i:'🐟',c:'#8fd6f5'},
+  {k:'elec', n:'零件',i:'🔌',c:'#ffd23f'},
+  {k:'core', n:'晶核',i:'💠',c:'#b9a6ff'}
+];
+const RK=RES.map(r=>r.k);
+const RICON={}; RES.forEach(r=>RICON[r.k]=r.i);
+
+// 九大槽位
+const SLOTS=[
+  {k:'water', n:'淡水', i:'💧'},
+  {k:'energy',n:'能源', i:'⚡'},
+  {k:'oxy',   n:'氧气', i:'🫧'},
+  {k:'food',  n:'食物', i:'🍖'},
+  {k:'nav',   n:'航行', i:'🧭'},
+  {k:'def',   n:'防御', i:'🛡'},
+  {k:'waste', n:'排污', i:'🚽'},
+  {k:'pop',   n:'人口', i:'🛏'},
+  {k:'grade', n:'等级', i:'🏛'}
+];
+
+//=====================================================================
+//  模块库（九槽位 × 世代）
+//=====================================================================
+// slot: 槽位  gen: 世代  use:耗电/s  rep:可叠装  eff:产出
+const MODS=[
+  // ===== 淡水 =====
+  {id:'urine', s:'water', gen:0, n:'尿液过滤器', cost:{cloth:6,plas:4}, use:0,
+   desc:'祖传循环方案。能救命，但没人愿意来你家做客。', eff:'淡水 +1.1/s　舒适度 -'},
+  {id:'filter', s:'water', gen:1, n:'海水过滤器', cost:{plas:10,iron:5}, use:0.8,
+   desc:'核心记忆点。广告里所有人都为它疯狂。', eff:'淡水 +2.0/s'},
+  {id:'filterP', s:'water', gen:1.5, n:'海水净化器PRO max', cost:{plas:18,iron:11,elec:3}, use:1.2,
+   desc:'鉴定员看了都说好，凭什么住拼好房？', eff:'淡水 +3.0/s'},
+  {id:'tide', s:'water', gen:2, n:'潮汐净水塔', cost:{iron:20,elec:7,core:1}, use:2.0,
+   desc:'陈浩用来奴役底层的东西，现在在你筏子上。', eff:'淡水 +4.2/s　势力声望 +'},
+
+  // ===== 能源 =====
+  {id:'solar', s:'energy', gen:1, n:'太阳能充电板', cost:{iron:7,plas:4}, use:0,
+   desc:'白天发电，夜里歇菜。逼你升级。', eff:'发电 +3.0/s（夜间 ×0.25）'},
+  {id:'eel', s:'energy', gen:2, n:'电鳗发电机', cost:{iron:15,elec:5,fish:6}, use:0,
+   desc:'版本答案。装上它，海水过滤器就过时了。', eff:'发电 +7.0/s'},
+  {id:'nuke', s:'energy', gen:3, n:'核动能堆', cost:{iron:26,elec:13,core:2}, use:0,
+   desc:'超大功率，偶尔过载跳闸——广告没告诉你这个。', eff:'发电 +15/s　过载风险'},
+
+  // ===== 氧气 =====
+  {id:'vent', s:'oxy', gen:1, n:'简易换气口', cost:{plas:6,cloth:4}, use:0.3,
+   desc:'把外面那口臭气换进来，聊胜于无。', eff:'氧气 +1.0/s'},
+  {id:'puffer', s:'oxy', gen:3, n:'河豚制氧仪', cost:{plas:16,fish:11,elec:5}, use:1.6,
+   desc:'比电鳗发电机更高阶。缺氧海域的准入证。', eff:'氧气 +3.4/s　解锁缺氧海域'},
+
+  // ===== 食物 =====
+  {id:'fisher', s:'food', gen:1, n:'捕鱼器', cost:{wood:9,rope:5}, use:0.5,
+   desc:'开局选项之一。有蛋白质，但没有水。', eff:'食物 +1.7/s'},
+  {id:'farm', s:'food', gen:2, n:'生态园', cost:{wood:19,rope:8,plas:6}, use:0.8,
+   desc:'进化流里那块绿油油的菜地。', eff:'食物 +3.2/s'},
+
+  // ===== 航行 =====
+  {id:'gps', s:'nav', gen:1, n:'自动导航', cost:{elec:4,iron:8}, use:0.4,
+   desc:'迷航？不存在的。减少风暴损失。', eff:'航速 +　风暴损失 -35%'},
+  {id:'light', s:'nav', gen:2, n:'灯塔', cost:{iron:13,elec:6}, use:0.8,
+   desc:'海上都市的标志，夜里照出航线。', eff:'航速 ++　夜间视野'},
+  {id:'emp', s:'nav', gen:3, n:'电磁冲击波', cost:{elec:14,core:2,iron:10}, use:2.2,
+   desc:'五倍化脉冲模块，能把鱼人炸回深海。', eff:'范围麻痹　探索 +'},
+
+  // ===== 防御 =====
+  {id:'spike', s:'def', gen:1, n:'防护尖刺', cost:{wood:12,iron:8}, use:0,
+   desc:'钉在平台边缘，猛兽咬一口掉半条命。', eff:'反伤 +　受击 -40%'},
+  {id:'cannon', s:'def', gen:2, n:'黄金炮台', cost:{iron:17,plas:9,rope:6}, use:1.3,
+   desc:'火力即真理。虽然嘴上被人说过时。', eff:'自动开炮 DPS 22'},
+  {id:'laser', s:'def', gen:3, n:'激光炮台', cost:{iron:23,elec:11,core:1}, use:2.4,
+   desc:'海上都市的成熟武装，一击一个洞。', eff:'自动开炮 DPS 42'},
+  {id:'biggun', s:'def', gen:4, n:'断海巨炮', cost:{iron:32,elec:18,core:3,rope:8}, use:3.2,
+   desc:'四大联盟决战用的重炮。冷却长，伤害离谱。', eff:'自动开炮 DPS 72'},
+
+  // ===== 排污 =====
+  {id:'toilet', s:'waste', gen:0, n:'移动公厕', cost:{}, use:0, start:true,
+   desc:'你的起点。全部故事从这里开始。', eff:'舒适度 +0　（可升级）'},
+  {id:'goldtoilet', s:'waste', gen:2, n:'黄金马桶', cost:{iron:11,plas:9,elec:3}, use:0.2,
+   desc:'奢侈，但鉴定员会因此高看你一眼。', eff:'舒适度 ++　入住等级 +'},
+
+  // ===== 人口 =====
+  {id:'bed', s:'pop', gen:1, n:'床铺', cost:{wood:10,rope:5}, use:0, rep:true,
+   desc:'给幸存者一个位子。人多力量大，也更能吃。', eff:'人口上限 +1', repMax:6},
+  {id:'bunk', s:'pop', gen:2, n:'双层床', cost:{wood:20,rope:11,cloth:6}, use:0, rep:true,
+   desc:'一寸空间挤两个人，末日的常态。', eff:'人口上限 +2', repMax:3},
+  {id:'cabin', s:'pop', gen:3, n:'居民舱', cost:{wood:26,iron:14,elec:6}, use:0.6, rep:true,
+   desc:'真正能住人的舱室，幸存者效率提升。', eff:'人口 +2　幸存效率 +30%', repMax:2},
+
+  // ===== 等级 =====
+  {id:'wall', s:'grade', gen:1, n:'加固墙体', cost:{wood:16,iron:9}, use:0, rep:true,
+   desc:'风暴来前的保命符，也抬耐久上限。', eff:'耐久上限 +75 并修复', repMax:4},
+  {id:'armor', s:'grade', gen:2, n:'装甲板', cost:{iron:22,plas:8,elec:4}, use:0, rep:true,
+   desc:'黑潮腐蚀？先啃这层钢板。', eff:'耐久上限 +90　腐蚀 -40%', repMax:3},
+  {id:'shield', s:'grade', gen:3, n:'护盾发生器', cost:{elec:16,core:2,iron:18}, use:2.6,
+   desc:'能量罩一开，深海巨兽都得绕道。', eff:'护盾自动吸收伤害'}
+];
+const MM={}; MODS.forEach(m=>MM[m.id]=m);
+const SLOTS_OF={}; MODS.forEach(m=>{ (SLOTS_OF[m.s]=SLOTS_OF[m.s]||[]).push(m); });
+
+// 扩建平台（独立，不占槽）
+const DECK_COST=i=>({wood:Math.round(14+i*7), plas:Math.round(7+i*4)});
+
+//=====================================================================
+//  状态
+//=====================================================================
+let G=null;
+function newGame(mode){
+  const g={
+    mode:mode||0, running:false, paused:false, over:false,
+    t:0, gt:0, day:1, dayF:1, star:1, dist:0, gain:0,
+    hp:CFG.hp0, hpmax:CFG.hp0, shield:0, shieldMax:0,
+    water:CFG.wa0, food:CFG.fo0, power:CFG.pw0, powmax:CFG.pwmax0, oxy:CFG.ox0,
+    res:{}, slots:{}, built:{}, decks:0, reach:CFG.reach0,
+    ppl:[], pplCap:1, comfort:0,
+    floaters:[], beasts:[], survivors:[], boats:[], parts:[], texts:[], bullets:[], bubbles:[],
+    spawnF:1.0, spawnB:CFG.beastFirst, spawnS:CFG.stormFirst, spawnP:16, spawnT:30,
+    storm:{on:false,warn:0,t:0,dur:0},
+    zone:1, minGen:0, chap:0, chapT:0, wiping:0,
+    kills:0, collected:0, rescued:0, identified:0,
+    shake:0, flash:0, hitStop:0,
+    player:{x:0,tx:0,act:'',actT:0,net:null,face:'happy',flip:1},
+    cam:{x:0,y:0,z:1,tz:1,tx:0,ty:0,shake:0},
+    gen1:1, dayT:14, night:0,
+    boss:null, bossDone:0, events:[], flags:{}, danmuT:0,
+    sfxT:{}, tutIdx:-1, tradeTick:0
+  };
+  RK.forEach(k=>g.res[k]=0);
+  g.res.wood=5; g.res.plas=3;
+  g.slots.waste='toilet'; g.built.toilet=1;
+  return g;
+}
+function has(id){ return !!G.slots[MM[id].s] && G.slots[MM[id].s]===id; }
+function slotMod(s){ return G.slots[s]?MM[G.slots[s]]:null; }
+function cnt(id){ return G.built[id]||0; }
+function afford(c){ for(const k in c){ if((G.res[k]|0)<c[k]) return false; } return true; }
+function pay(c){ for(const k in c){ G.res[k]-=c[k]; } }
+function isOld(id){ const m=MM[id]; return m.gen<G.minGen && m.gen>0; }
+function modEff(id){ return isOld(id)?0.34:1; }
+function stars(){
+  let n=1;
+  const w=slotMod('water'),e=slotMod('energy'),d=slotMod('def'),g2=slotMod('grade'),o=slotMod('oxy');
+  if(w&&w.gen>=1.5) n++;
+  if(e&&e.gen>=2) n++;
+  if(o&&o.gen>=3) n++;
+  if(d&&d.gen>=3) n++;
+  if(g2&&g2.gen>=2) n++;
+  if(G.ppl.length>=4) n++;
+  if(G.decks>=3) n++;
+  if(G.flags&&G.flags.chenDead) n++;
+  return clamp(n,1,5);
+}
+
+//=====================================================================
+//  音频引擎（程序化 BGM + 合成音效）
+//=====================================================================
+const Snd={
+  on:true, ac:null, master:null, busSfx:null, busMus:null, ready:false,
+  init(){
+    if(this.ac) { if(this.ac.state==='suspended') this.ac.resume(); return; }
+    try{
+      const A=window.AudioContext||window.webkitAudioContext; if(!A) return;
+      this.ac=new A();
+      this.master=this.ac.createGain(); this.master.gain.value=0.9; this.master.connect(this.ac.destination);
+      this.busSfx=this.ac.createGain(); this.busSfx.gain.value=0.85; this.busSfx.connect(this.master);
+      this.busMus=this.ac.createGain(); this.busMus.gain.value=0.16; this.busMus.connect(this.master);
+      this.ready=true; this.startAmbient();
+    }catch(e){}
+  },
+  // --- 环境海浪（持续噪声，缓慢起伏）
+  startAmbient(){
+    if(!this.ac) return;
+    const a=this.ac, n=a.sampleRate*2;
+    const b=a.createBuffer(1,n,a.sampleRate), d=b.getChannelData(0);
+    let last=0;
+    for(let i=0;i<n;i++){ const w=Math.random()*2-1; last=last*0.94+w*0.06; d[i]=last*3.2; }
+    const s=a.createBufferSource(); s.buffer=b; s.loop=true;
+    const f=a.createBiquadFilter(); f.type='lowpass'; f.frequency.value=420; f.Q.value=0.6;
+    const g=a.createGain(); g.gain.value=0.055;
+    const lfo=a.createOscillator(); lfo.frequency.value=0.11;
+    const lg=a.createGain(); lg.gain.value=0.03;
+    lfo.connect(lg); lg.connect(g.gain); lfo.start();
+    s.connect(f); f.connect(g); g.connect(this.master);
+    s.start(); this._amb=g;
+  },
+  // --- 通用音
+  tone(f,dur,type,vol,slide,delay,bus){
+    if(!this.on||!this.ready) return;
+    const a=this.ac, t=a.currentTime+(delay||0);
+    const o=a.createOscillator(), g=a.createGain();
+    o.type=type||'sine'; o.frequency.setValueAtTime(f,t);
+    if(slide) o.frequency.exponentialRampToValueAtTime(Math.max(30,slide),t+dur);
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0002,vol||0.12),t+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(g); g.connect(bus||this.busSfx); o.start(t); o.stop(t+dur+0.03);
+  },
+  noise(dur,vol,freq,type,delay){
+    if(!this.on||!this.ready) return;
+    const a=this.ac, t=a.currentTime+(delay||0);
+    const n=Math.floor(a.sampleRate*dur), b=a.createBuffer(1,Math.max(1,n),a.sampleRate), d=b.getChannelData(0);
+    for(let i=0;i<n;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/n,1.6);
+    const s=a.createBufferSource(); s.buffer=b;
+    const f=a.createBiquadFilter(); f.type=type||'lowpass'; f.frequency.value=freq||900;
+    const g=a.createGain(); g.gain.value=vol||0.14;
+    s.connect(f); f.connect(g); g.connect(this.busSfx); s.start(t);
+  },
+  // --- 音效库
+  pick(){ this.tone(620,0.09,'sine',0.11,940); this.noise(0.09,0.06,1800,'highpass'); },
+  catchBad(){ this.tone(180,0.13,'square',0.07,110); },
+  build(){ this.tone(392,0.1,'triangle',0.12); this.tone(587,0.14,'triangle',0.12,0,0.08); this.tone(784,0.2,'triangle',0.1,0,0.17);
+           this.noise(0.16,0.09,1400,'bandpass'); },
+  deny(){ this.tone(150,0.15,'square',0.08,88); },
+  hit(){ this.noise(0.11,0.1,420); this.tone(120,0.11,'sawtooth',0.07,58); },
+  boom(){ this.noise(0.55,0.2,220); this.tone(66,0.5,'sine',0.16,34); },
+  roar(){ this.tone(88,0.55,'sawtooth',0.15,44); this.noise(0.45,0.1,300); },
+  alarm(){ this.tone(880,0.15,'square',0.09,680); this.tone(880,0.15,'square',0.09,680,0.22); },
+  zap(){ this.tone(1400,0.08,'square',0.08,300); this.noise(0.07,0.05,3000,'highpass'); },
+  cannon(){ this.tone(90,0.16,'sawtooth',0.12,44); this.noise(0.2,0.1,700); },
+  bubble(){ this.tone(rnd(500,760),0.1,'sine',0.05,rnd(900,1300)); },
+  flush(){ this.noise(0.5,0.12,700,'bandpass'); this.tone(220,0.4,'sine',0.05,120); },
+  spark(){ this.tone(rnd(1800,2600),0.05,'square',0.05,900); },
+  coin(){ this.tone(988,0.07,'square',0.09); this.tone(1319,0.13,'square',0.09,0,0.07); },
+  levelup(){ [523,659,784,1047].forEach((f,i)=>this.tone(f,0.22,'triangle',0.11,0,i*0.09)); },
+  zone(){ [523,659,784,1047,1319].forEach((f,i)=>this.tone(f,0.28,'triangle',0.1,0,i*0.12)); },
+  die(){ [440,349,262,196,147].forEach((f,i)=>this.tone(f,0.34,'sawtooth',0.11,0,i*0.16)); },
+  // 机械播报腔（模拟鉴定员）
+  bot(){ this.tone(320,0.05,'square',0.05,340); this.tone(300,0.05,'square',0.05,290,0.07);
+         this.tone(340,0.06,'square',0.05,300,0.14); },
+  ok(){ [300,300,300].forEach((f,i)=>this.tone(f,0.09,'square',0.07,f*0.96,i*0.16)); },
+  punch(){ this.noise(0.28,0.22,300); this.tone(70,0.3,'sine',0.18,32); },
+  start(){ // "疯狂水世界！启动！" 音效签名
+    this.tone(392,0.1,'square',0.1); this.tone(523,0.1,'square',0.1,0,0.1);
+    this.tone(659,0.1,'square',0.1,0,0.2); this.tone(880,0.3,'square',0.12,0,0.3);
+    this.noise(0.3,0.06,2200,'highpass',0.3);
+  },
+
+  // --- BGM：程序化 4 小节 loop
+  mus:{on:false, t:0, step:0, bpm:126, mood:0},
+  scale:[0,2,3,5,7,8,10],
+  chords:[[0,-4,-7],[5,1,-2],[2,-1,-5],[7,3,0]],   // 半音相对根
+  musicStart(mood){
+    if(!this.ready) return; this.mus.on=true; this.mus.mood=mood||0; this.mus.t=0; this.mus.step=0;
+  },
+  musicStop(){ this.mus.on=false; },
+  musicSet(mood){ this.mus.mood=mood; },
+  musicTick(dt){
+    if(!this.on||!this.ready||!this.mus.on||!this.ac) return;
+    const m=this.mus;
+    const spb=60/m.bpm/4;                 // 16分音符
+    m.t+=dt;
+    while(m.t>=spb){
+      m.t-=spb;
+      const s=m.step%16, bar=Math.floor(m.step/16)%4;
+      const root=45 + (m.mood===2?-2:(m.mood===1?0:3));   // A2 附近
+      const ch=this.chords[bar];
+      const bus=this.busMus;
+      // kick
+      if(s%4===0){ this.tone(58,0.14,'sine',0.5,34,0,bus); }
+      // hat
+      if(s%2===1) this.noise(0.035,0.05,7000,'highpass');
+      // snare
+      if(s===4||s===12) this.noise(0.1,0.14,1600,'bandpass');
+      // bass
+      if(s%4===0||s===6||s===14){
+        const semi=root+ch[0];
+        this.tone(440*Math.pow(2,(semi-69)/12),0.2,'sawtooth',0.2,440*Math.pow(2,(semi-69)/12)*0.98,0,bus);
+      }
+      // arp
+      if(s%2===0){
+        const idx=(Math.floor(s/2)+bar)%this.scale.length;
+        const semi=root+12+this.scale[idx]+ch[1];
+        this.tone(440*Math.pow(2,(semi-69)/12),0.13,'square',0.07,0,0,bus);
+      }
+      // 高潮：加一层八度
+      if(m.mood>=2 && s%8===0){
+        const semi=root+24+ch[2];
+        this.tone(440*Math.pow(2,(semi-69)/12),0.3,'triangle',0.06,0,0,bus);
+      }
+      m.step++;
+    }
+  }
+};
+
+//=====================================================================
+//  章节（广告天数流）
+//=====================================================================
+const CHAPS=[
+  {day:1,   sub:'开局一个移动公厕',
+   lead:'打捞 10 件物资，先把命保住',
+   cond:g=>g.collected>=10, minGen:0, mood:0,
+   reward:{wood:8,plas:6,rope:4}},
+  {day:9,   sub:'第一层平台 · 鉴定员上门',
+   lead:'装上海水过滤器，让鉴定员闭嘴',
+   cond:g=>!!g.slots.water && MM[g.slots.water].gen>=1, minGen:0, mood:0,
+   reward:{plas:10,iron:8,elec:2}},
+  {day:30,  sub:'电力时代 · 版本答案更替',
+   lead:'装上电鳗发电机（能源槽 2 代）',
+   cond:g=>!!g.slots.energy && MM[g.slots.energy].gen>=2, minGen:1, mood:1,
+   reward:{iron:16,elec:8,fish:6}},
+  {day:121, sub:'深潜缺氧海域',
+   lead:'装上河豚制氧仪，并完成一次深潜打捞',
+   cond:g=>!!g.slots.oxy && MM[g.slots.oxy].gen>=3 && g.flags.dove, minGen:2, mood:1,
+   reward:{core:2,elec:12,plas:14}},
+  {day:999, sub:'水之都决战',
+   lead:'击退陈浩的旗舰，夺下潮汐净水塔',
+   cond:g=>g.flags.chenDead, minGen:3, mood:2,
+   reward:{}}
+];
+
+//=====================================================================
+//  实体
+//=====================================================================
+const FKINDS=[
+  {k:'wood', draw:'plank', w:28},
+  {k:'plas', draw:'barrel', w:24},
+  {k:'iron', draw:'metal', w:22},
+  {k:'rope', draw:'rope',  w:14},
+  {k:'cloth',draw:'cloth', w:14},
+  {k:'fish', draw:'fish',  w:13},
+  {k:'elec', draw:'elec',  w:9},
+  {k:'core', draw:'core',  w:4}
+];
+function fkind(){
+  // 高章节提高稀有物权重
+  const z=G.zone;
+  const pool=[];
+  FKINDS.forEach(f=>{
+    let w=f.w;
+    if(f.k==='elec') w+=z*3;
+    if(f.k==='core') w+=z*1.6;
+    if(G.storm.on && f.k!=='core') w*=1.1;
+    for(let i=0;i<Math.round(w);i++) pool.push(f);
+  });
+  return pick(pool);
+}
+function baseX(){ return W/2; }
+function deckW(){ return 210+G.decks*78; }
+
+function spawnFloater(){
+  const from=chance(0.5)?-70:W+70;
+  const k=fkind();
+  G.floaters.push({
+    x:from, y:SEA+rnd(-8,18), kind:k.k, draw:k.draw,
+    vx:(from<0?1:-1)*rnd(40,68)*(G.storm.on?1.8:1), ph:rnd(0,6.28),
+    amt:(k.k==='core'?1:(k.k==='elec'?ri(1,2):ri(1,3))),
+    sc:rnd(.85,1.15), caught:false, t:0
+  });
+}
+function spawnBeast(boss){
+  const lv=G.zone, from=chance(0.5)?-70:W+70;
+  const hp=boss?0:(34+lv*11);
+  const type = boss? 'boss' : (G.zone>=3&&chance(0.28)?'fishman':(chance(0.6)?'shark':'croco'));
+  const b={
+    x:from, y:SEA+rnd(28,56), dir:from<0?1:-1,
+    hp, hpmax:hp, dmg:boss?0:(4.5+lv*1.7), spd:rnd(32,42)+lv*2.6,
+    state:'swim', bite:0, t:0, ph:rnd(0,6.28), hurt:0, dead:false, type,
+    boss:!!boss, atk:0, phase:0
+  };
+  G.beasts.push(b);
+  if(!boss){ Snd.roar(); toast('⚠ 深海猛兽逼近！点击反击','warn'); }
+  return b;
+}
+function spawnSurvivor(){
+  const from=chance(0.5)?-64:W+64;
+  const jobs=[
+    {j:'拾荒',i:'🧺',c:'#c98a4b',rate:1.5},{j:'工匠',i:'🔨',c:'#c2ced6',rate:1.9},
+    {j:'厨子',i:'🍳',c:'#ffd23f',rate:1.6},{j:'猎手',i:'🔱',c:'#ff6b35',rate:2.1},
+    {j:'医师',i:'💊',c:'#7fe3d8',rate:1.7}
+  ];
+  G.survivors.push({
+    x:from, y:SEA-2, dir:from<0?1:-1, spd:rnd(22,30), life:15, t:0, dead:false,
+    job:pick(jobs), hue:ri(0,3),
+    name:pick(['阿水','老侃','蜜雪儿','山姆','杰森','米娅','小豆','铁柱','千代','光头仔','阿强','小满'])
+  });
+  toast('🧍 海面漂来一名幸存者，点击收留','good'); Snd.bot();
+}
+function spawnBoat(){
+  const F=[
+    {n:'太阳岛',c:'#ffd23f',i:'☀',desc:'自称一等公民，用纯净水和检测体系划分等级。',
+     buy:[{give:{plas:12},get:{water:55},t:'纯净水 55'},{give:{iron:8,plas:6},get:{elec:4},t:'零件 ×4'}],
+     sell:[{get:{plas:9},give:{},t:'高价收塑料'}]},
+    {n:'铁锈湾',c:'#ff6b35',i:'⚙',desc:'军火与黑市。想要火力就来这儿。',
+     buy:[{give:{iron:18},get:{elec:5},t:'零件 ×5'},{give:{iron:26,elec:6},get:{core:1},t:'晶核 ×1'}],
+     sell:[{get:{iron:10},t:'高价收废铁'}]},
+    {n:'风栖港',c:'#2ec4b6',i:'⛵',desc:'中立港。情报、避风、什么都能谈。',
+     buy:[{give:{rope:10,cloth:8},get:{wood:20},t:'木板 ×20'},{give:{fish:8},get:{food:0},t:'热汤（食物满）'}],
+     sell:[{get:{rope:6,cloth:5},t:'收绳索与破布'}]},
+    {n:'水之都',c:'#7c4dff',i:'🌊',desc:'陈浩的地盘。他掌控潮汐净水塔，用水奴役底层。',
+     buy:[{give:{core:1,elec:4},get:{water:0},t:'配水（淡水全满）'}],
+     sell:[{get:{core:1},t:'高价收晶核'}]}
+  ];
+  const from=chance(0.5)?-90:W+90;
+  G.boats.push({x:from, y:SEA-6, dir:from<0?1:-1, spd:20, t:0, life:26, f:pick(F), dead:false});
+  toast('🏴 一艘商船靠了过来','good'); $('b-tradedot').classList.remove('hidden');
+}
+// 深潜点
+function spawnDive(){
+  G.diveSpot={x:rnd(baseX()+deckW()/2+70, W-90), y:SEA+70, t:0, life:22, r:44};
+  toast('🌀 前方出现沉船漩涡，点击下潜','good');
+}
+
+//=====================================================================
+//  建造 / 升级 / 交易
+//=====================================================================
+function install(id){
+  const m=MM[id]; if(!m) return false;
+  const cur=G.slots[m.s];
+  if(cur===id){
+    if(!m.rep){ Snd.deny(); toast('已经装了'); return false; }
+    if(cnt(id)>=(m.repMax||1)){ Snd.deny(); toast('已经到上限了'); return false; }
+  } else if(cur && MM[cur].gen>m.gen){
+    Snd.deny(); toast('槽位里已是更高级的模块','warn'); return false;
+  }
+  if(!afford(m.cost)){ Snd.deny(); toast('资源不够，继续捞！','warn'); return false; }
+  if(cur && cur!==id) toast('🔄 拆掉【'+MM[cur].n+'】，换上【'+m.n+'】','good');
+  pay(m.cost);
+  G.slots[m.s]=id;
+  G.built[id]=cnt(id)+1;
+  // 即时效果
+  if(id==='wall'){ G.hpmax+=75; G.hp=Math.min(G.hpmax,G.hp+75); }
+  if(id==='armor'){ G.hpmax+=90; G.hp=Math.min(G.hpmax,G.hp+90); }
+  if(id==='shield'){ G.shieldMax=90; G.shield=90; }
+  if(id==='bed') G.pplCap+=1;
+  if(id==='bunk') G.pplCap+=2;
+  if(id==='cabin') G.pplCap+=2;
+  if(id==='goldtoilet'||id==='cabin') G.comfort+=1;
+  Snd.build(); G.flash=0.35; G.hitStop=0.07;
+  part(baseX(),SEA-34,26,'#ffd23f',210,.85);
+  ftext(baseX(),SEA-84,m.n+' 装好了！','#ffd23f',20);
+  toast('✅ '+m.n+' 已安装','good');
+  if(id==='filter'){ Snd.bubble(); }
+  checkChapter(); renderAll(); return true;
+}
+function buyDeck(){
+  const c=DECK_COST(G.decks);
+  if(!afford(c)){ Snd.deny(); toast('资源不够','warn'); return false; }
+  pay(c); G.decks++; G.reach+=46;
+  Snd.build(); G.flash=0.3;
+  part(baseX(),SEA-20,20,'#c98a4b',180,.9);
+  ftext(baseX(),SEA-70,'平台扩建！捞取范围 +','#c98a4b',18);
+  toast('🪵 平台扩建 ×'+(G.decks+1),'good'); renderAll(); return true;
+}
+function ident(){
+  // 鉴定员事件
+  Snd.bot();
+  const m=slotMod('water');
+  const gen=m?m.gen:0;
+  let title,text,bonus;
+  if(gen>=2){ title='鉴定结果：S'; text='海水…不，这是潮汐级净水设备。请您跟我来，<em>总统厨房</em>这边请。'; bonus={core:1,elec:3}; }
+  else if(gen>=1.5){ title='鉴定结果：A'; text='海水净化器 PRO max 一台，可以入住<em>高级庇护所</em>。'; bonus={plas:6,elec:2}; }
+  else if(gen>=1){ title='鉴定结果：B'; text='收到海水过滤器一台。请您跟我来——<em>标准间</em>还有一间。'; bonus={plas:4}; }
+  else if(gen>0){ title='鉴定结果：C'; text='尿液过滤器？…自己去那边住<em>拼好房</em>吧。'; bonus={cloth:3}; }
+  else { title='鉴定结果：D'; text='连过滤器都没有？<em>甲板</em>上躺着吧，末日不讲情面。'; bonus={}; }
+  for(const k in bonus){ G.res[k]=(G.res[k]|0)+bonus[k]; bump(k); }
+  G.identified++;
+  story([
+    {who:'insp', nm:'鉴定员', txt:text, box:''},
+    {who:'fq', nm:'肥强', txt:'凭什么让我住拼好房？不就是配置低了点吗！<em>我这就去打捞海水过滤器。</em>', box:'fq'}
+  ], ()=>{ toast('🎫 '+title+' · 鉴定完成','good'); Snd.ok(); });
+}
+
+//=====================================================================
+//  交互动作
+//=====================================================================
+function tryCatch(f){
+  if(f.caught) return;
+  if(Math.abs(f.x-baseX())>G.reach){ Snd.catchBad(); ftext(f.x,f.y-30,'太远了！','#ff9d9d',14); return; }
+  f.caught=true;
+  G.player.tx=clamp(f.x-baseX(),-deckW()/2+18,deckW()/2-18);
+  G.player.act='net'; G.player.actT=0.36; G.player.net={x:f.x,y:f.y};
+  Snd.pick();
+  const amt=f.amt; G.res[f.kind]+=amt; G.collected+=amt; G.gain+=amt;
+  part(f.x,f.y,9,'#bfe9ff',140,.5);
+  ftext(f.x,f.y-28,'+'+amt+' '+RES.find(r=>r.k===f.kind).n, RES.find(r=>r.k===f.kind).c,17);
+  bump(f.kind);
+  if(f.kind==='fish'){
+    const heal=Math.min(CFG.foMax-G.food, amt*7);
+    if(heal>0.5){ G.food+=heal; ftext(f.x,f.y-50,'烤鱼 +'+Math.round(heal)+' 食物','#ffd23f',15); Snd.coin(); }
+  }
+  if(f.kind==='core'){ Snd.levelup(); G.flash=0.5; ftext(baseX(),SEA-120,'💠 稀有晶核！','#b9a6ff',22); }
+  checkChapter(); renderRes();
+}
+function hitBeast(b,dmg,viaGun){
+  b.hp-=dmg; b.hurt=0.18;
+  if(!viaGun){ part(b.x,b.y-10,8,'#ff6b6b',160,.5); ftext(b.x,b.y-36,'-'+Math.round(dmg),'#ffd6a5',16); Snd.hit(); }
+  else { part(b.x,b.y-10,5,'#ffd23f',130,.4); }
+  if(b.hp<=0){
+    b.dead=true;
+    if(b.boss){ onBossDown(b); return; }
+    G.kills++;
+    part(b.x,b.y,22,'#ff9f43',220,.95); ftext(b.x,b.y-48,'击退！','#ffd23f',21);
+    const drop=G.zone>=3&&chance(.35)?'core':(chance(.3)?'elec':pick(['wood','iron','rope','fish','plas']));
+    const n=drop==='core'?1:ri(2,5);
+    G.res[drop]+=n; bump(drop);
+    ftext(b.x,b.y-22,'+'+n+' '+RICON[drop],RES.find(r=>r.k===drop).c,16);
+    Snd.tone(300,0.18,'square',0.09,140);
+    renderRes();
+  }
+}
+function rescue(s){
+  if(s.dead) return;
+  if(G.ppl.length>=G.pplCap){ Snd.deny(); toast('没有床铺了，先造【床铺】','warn'); return; }
+  if(G.food<12){ Snd.deny(); toast('食物不够，喂不活他','warn'); return; }
+  G.food-=12; s.dead=true; G.rescued++;
+  G.ppl.push({name:s.name,job:s.job,hue:s.hue,x:baseX()+rnd(-deckW()/2+26,deckW()/2-26),t:rnd(0,2),mood:1});
+  part(s.x,s.y-10,15,'#8ff0e4',170,.75);
+  ftext(s.x,s.y-44,s.job.i+' '+s.name+' 加入了！','#8ff0e4',18);
+  Snd.tone(523,0.14,'triangle',0.11,784);
+  toast('🤝 '+s.name+'（'+s.job.j+'）加入据点','good');
+  renderRes();
+}
+
+//=====================================================================
+//  深潜
+//=====================================================================
+function startDive(){
+  if(G.dive) return;
+  if(G.oxy<25){ Snd.deny(); toast('氧气不足，先装制氧设备','warn'); return; }
+  G.dive={t:0,dur:13,chests:[],up:false,gain:0};
+  for(let i=0;i<ri(4,6);i++){
+    G.dive.chests.push({x:rnd(120,W-120), y:rnd(SEA+90,H-70), open:false, k:chance(.3)?'core':(chance(.5)?'elec':pick(['iron','plas','rope'])), a:ri(2,5)});
+  }
+  G.diveSpot=null;
+  Snd.noise(0.6,0.16,500); Snd.tone(180,0.5,'sine',0.08,90);
+  sub('🫧 下潜！氧气正在流失 —— 点击宝箱');
+  toast('🫧 深潜开始，点击水下宝箱','good');
+}
+function endDive(){
+  if(!G.dive) return;
+  const got=G.dive.gain;
+  G.dive=null; G.flags.dove=true;
+  Snd.noise(0.5,0.14,900); Snd.tone(300,0.4,'sine',0.08,700);
+  sub('');
+  toast(got>0?('🫧 上浮，带回 '+got+' 件物资'):'🫧 空手上浮……', got>0?'good':'warn');
+  checkChapter(); renderRes();
+}
+
+//=====================================================================
+//  BOSS
+//=====================================================================
+function startBoss(kind){
+  if(G.boss) return;
+  const b = kind==='chen'
+    ? {kind:'chen', name:'陈浩旗舰', hp:900+G.zone*130, hpmax:900+G.zone*130, x:W+120, y:SEA-10, t:0, atk:0, phase:0, hurt:0, dead:false}
+    : {kind:'kraken', name:'深海巨兽', hp:520+G.zone*90, hpmax:520+G.zone*90, x:W+120, y:SEA+40, t:0, atk:0, phase:0, hurt:0, dead:false};
+  G.boss=b; G.beasts.length=0;
+  Snd.musicSet(2); Snd.roar(); G.shake=22; G.flash=0.5;
+  if(kind==='chen'){
+    story([
+      {who:'chen', nm:'水之都盟主 · 陈浩', txt:'就凭你这块破公厕，也敢在我的海面上打水？<em>我要的不只是水之都，我要的是这全世界的大海。</em>', box:'ch'},
+      {who:'ashui', nm:'阿水', txt:'水不是你的。<em>疯狂水世界，启动！</em>', box:''}
+    ], ()=>{ Snd.start(); sub('⚔ 击沉陈浩旗舰！点击它，炮台会自动开火'); });
+  } else {
+    story([
+      {who:'ashui', nm:'阿水', txt:'声呐上有个大家伙……比鲨鱼大十倍。<em>屏住呼吸。</em>', box:''}
+    ], ()=>{ sub('⚔ 深海巨兽来袭！氧气会急速流失'); });
+  }
+}
+function onBossDown(b){
+  if(b.kind==='chen'){
+    G.flags.chenDead=true; G.boss=null; G.bossDone=1;
+    Snd.levelup(); Snd.zone(); G.flash=0.8; G.shake=26;
+    part(W/2,SEA,60,'#ffd23f',300,1.4);
+    sub('');
+    story([
+      {who:'chen', nm:'陈浩', txt:'……潮汐净水塔，归你了。', box:'ch'},
+      {who:'ashui', nm:'阿水', txt:'绿洲就在前面。<em>我们的海，才刚开始。</em>', box:''}
+    ], ()=>{ winGame(); });
+  } else {
+    G.boss=null; G.kills+=5;
+    Snd.levelup(); G.flash=0.6;
+    part(W/2,SEA+30,44,'#b9a6ff',260,1.2);
+    const bonus={core:2,elec:8,iron:12};
+    for(const k in bonus){ G.res[k]+=bonus[k]; bump(k); }
+    sub(''); toast('🌀 深海巨兽沉回深渊，掉落晶核 ×2','good');
+    checkChapter(); renderRes();
+  }
+}
+function updateBoss(dt){
+  const b=G.boss; if(!b) return;
+  b.t+=dt; if(b.hurt>0) b.hurt-=dt;
+  // 进场
+  if(b.x>W-160) b.x=lerp(b.x, W-160, Math.min(1,dt*1.4));
+  else b.x = W-160 + Math.sin(b.t*0.7)*40;
+  b.y = (b.kind==='chen'? SEA-14 : SEA+46) + Math.sin(b.t*1.5)*8;
+  // 攻击
+  b.atk-=dt;
+  if(b.atk<=0){
+    b.atk = b.kind==='chen'? rnd(2.6,3.4) : rnd(3.0,4.0);
+    if(b.kind==='chen'){
+      // 舰炮齐射
+      for(let i=0;i<3;i++){
+        G.bullets.push({x:b.x-70, y:b.y-20, tx:baseX()+rnd(-deckW()/2,deckW()/2), ty:SEA-30, t:0, dur:rnd(0.6,0.9), dmg:14+G.zone*2, hostile:true,target:null});
+      }
+      Snd.cannon(); G.shake=Math.max(G.shake,6);
+    } else {
+      // 触手拍击 + 抽氧
+      G.oxy=Math.max(0,G.oxy-9);
+      G.hp-=6+G.zone;
+      G.shake=Math.max(G.shake,12);
+      ftext(baseX()+rnd(-50,50),SEA-110,'氧气 -9','#b9a6ff',17);
+      Snd.boom();
+    }
+  }
+  // 阶段
+  const p=1-b.hp/b.hpmax;
+  if(p>0.5 && b.phase===0){ b.phase=1; toast('💢 '+b.name+' 进入狂暴！','warn'); Snd.roar(); }
+  if(p>0.8 && b.phase===1){ b.phase=2; toast('🔥 '+b.name+' 濒死反扑！','warn'); Snd.roar(); }
+}
+
+//=====================================================================
+//  随机事件
+//=====================================================================
+const EVENTS=[
+  {id:'neighbor', w:26, run(){
+    story([
+      {who:'nb', nm:'邻居', txt:'借你家地板装个空调外机没关系吧？<em>反正你也住不了几天。</em>', box:''},
+      {who:'fq', nm:'肥强', txt:'……OK。……OK。……OK。', box:'fq'}
+    ], ()=>{
+      choice('邻居把空调外机装进你家', '肥强忍了三次。你要怎么选？', [
+        {t:'忍了', d:'继续打捞，不跟烂人计较', i:'fq', g:1, r:{wood:5,plas:4}, say:'我这就去打捞海水过滤器，搬去更好的庇护所。'},
+        {t:'砸了它', d:'掉 12 耐久，但拿回尊严和零件', i:'fq', g:2, r:{elec:3,iron:5}, hp:-12, say:'一拳打穿墙壁！'}
+      ], o=>{
+        if(o.hp){ G.hp+=o.hp; Snd.punch(); G.shake=14; part(baseX(),SEA-40,18,'#ff6b35',200,.8); }
+        for(const k in o.r){ G.res[k]+=o.r[k]; bump(k); }
+        G.comfort+= o.g===2?1:-0.5;
+        Snd.build(); toast(o.g===2?'💥 肥强一拳穿墙！':'😤 忍字头上一把刀','good');
+        sub(o.say); setTimeout(()=>sub(''),2600);
+        renderRes();
+      });
+    });
+  }},
+  {id:'version', w:20, run(){
+    const cur=slotMod('water');
+    const gen=cur?cur.gen:0;
+    let line = gen>=3 ? '你这套已经是最新代了……<em>但下个版本马上就来。</em>'
+      : gen>=2 ? '海水过滤器？<em>早就过时了</em>，现在最牛的是电鳗发电机或河豚制氧仪。'
+      : '现在最牛的是<em>电鳗发电机</em>。你还在用那破过滤器？';
+    story([
+      {who:'nb', nm:'路过的高玩', txt:line, box:''},
+      {who:'fq', nm:'肥强', txt:'……行。我这就去打捞。<em>疯狂水世界！启动！</em>', box:'fq'}
+    ], ()=>{ Snd.ok(); toast('📢 版本打脸：模块会过时，别停下来','warn'); renderAll(); });
+  }},
+  {id:'chest', w:18, run(){
+    const b={wood:ri(6,12),iron:ri(4,9),plas:ri(3,7)};
+    for(const k in b){ G.res[k]+=b[k]; bump(k); }
+    Snd.coin(); part(baseX(),SEA-30,24,'#ffd23f',200,.9);
+    toast('📦 漂来一只密封货箱，撬开看看','good');
+    sub('一点点拼接改造 —— 物资到手');
+    setTimeout(()=>sub(''),2200);
+    renderRes();
+  }},
+  {id:'inspect', w:14, run(){ ident(); }},
+  {id:'stormcall', w:12, run(){
+    if(G.storm.on||G.storm.warn>0) return;
+    G.spawnS=3; toast('🌪 气象台：黑潮风暴正在形成','warn'); Snd.alarm();
+  }},
+  {id:'merchant', w:16, run(){ spawnBoat(); }}
+];
+function pickEvent(){
+  const pool=[]; EVENTS.forEach(e=>{ for(let i=0;i<e.w;i++) pool.push(e); });
+  return pick(pool);
+}
+
+//=====================================================================
+//  章节推进
+//=====================================================================
+function checkChapter(){
+  if(!G||G.over) return;
+  const c=CHAPS[G.chap]; if(!c) return;
+  if(c.cond(G)) advanceChapter();
+}
+function advanceChapter(){
+  const done=CHAPS[G.chap];
+  G.chap++;
+  const nxt=CHAPS[G.chap];
+  // 奖励
+  if(done) for(const k in done.reward){ G.res[k]=(G.res[k]|0)+done.reward[k]; bump(k); }
+  // 版本淘汰
+  const oldMin=G.minGen;
+  if(nxt){ G.minGen=nxt.minGen; }
+  let outdated=[];
+  for(const s in G.slots){ const m=MM[G.slots[s]]; if(m && m.gen>0 && m.gen<G.minGen) outdated.push(m.n); }
+  G.zone++;
+  G.wiping=1.7;
+  Snd.musicSet(nxt?nxt.mood:2);
+  if(!nxt){ /* 通关在 boss 里处理 */ }
+  // 转场
+  $('wipe-day').textContent='海上生存';
+  $('wipe-h').textContent='第 '+(nxt?nxt.day:999)+' 天';
+  $('wipe-p').textContent=(nxt?nxt.sub:'')+(done&&done.reward?'\n物资补给已送达':'');
+  $('wipe').classList.add('show');
+  Snd.zone();
+  setTimeout(()=>{
+    $('wipe').classList.remove('show');
+    if(outdated.length){
+      toast('📢 【'+outdated.join('、')+'】已经过时了','warn');
+      story([{who:'nb', nm:'版本播报', txt:'经鉴定，<em>'+outdated.join('、')+'</em>已是过时设备。效能下降至 34%。\n现在最牛的是<em>更高世代的模块</em>。', box:''}], ()=>{ Snd.ok(); });
+    }
+    if(nxt && nxt.day===121 && !G.flags.kraken){ G.flags.kraken=1; setTimeout(()=>startBoss('kraken'),1400); }
+    if(nxt && nxt.day===999 && !G.flags.chen){ G.flags.chen=1; setTimeout(()=>startBoss('chen'),1800); }
+  },1600);
+  G.hp=Math.min(G.hpmax,G.hp+34);
+  G.water=Math.min(CFG.waMax,G.water+25);
+  G.food=Math.min(CFG.foMax,G.food+25);
+  renderAll();
+}
+
+//=====================================================================
+//  更新
+//=====================================================================
+function toast(msg,kind){ UI.toast(msg,kind); }
+function sub(t){ UI.sub(t); }
+function bump(k){ UI.bump(k); }
+function part(x,y,n,c,s,l){ FX.part(x,y,n,c,s,l); }
+function ftext(x,y,t,c,s){ FX.text(x,y,t,c,s); }
+function story(list,cb){ UI.story(list,cb); }
+function choice(title,lead,opts,cb){ UI.choice(title,lead,opts,cb); }
+function renderRes(){ UI.renderRes(); }
+function renderAll(){ UI.renderAll(); }
+
+function update(dt0){
+  if(!G||!G.running||G.paused||G.over) return;
+  let dt=dt0;
+  if(G.hitStop>0){ G.hitStop-=dt0; dt=dt0*0.12; }
+  G.t+=dt; G.gt+=dt;
+
+  // ---------- 昼夜
+  G.dayT+=dt;
+  const dayCycle=150;
+  const dp=(G.dayT%dayCycle)/dayCycle;
+  // 余弦昼夜：dp=0 正午，0.5 午夜
+  G.gen1 = clamp((Math.cos(dp*Math.PI*2)+1)/2, 0, 1);
+  G.night = G.gen1<0.42 ? 1 : 0;
+
+  // ---------- 章节天数插值
+  const cur=CHAPS[G.chap];
+  if(cur) G.dayF=lerp(G.dayF, cur.day, Math.min(1,dt*0.5));
+  else G.dayF=lerp(G.dayF,999,Math.min(1,dt*0.5));
+  G.dist += dt*(2.2+ (slotMod('nav')? (MM[G.slots.nav].gen*1.6):0));
+
+  // ---------- 电力
+  const em=slotMod('energy');
+  let gen=0;
+  if(em){
+    const e=modEff(em.id);
+    if(em.id==='solar') gen=3.0*e*(G.night?0.25:1);
+    else if(em.id==='eel') gen=7.0*e;
+    else if(em.id==='nuke') gen=15*e*(chance(0.02)?0.2:1);
+  }
+  G.powmax = CFG.pwmax0 + (cnt('nuke')?60:0) + (em&&em.id==='eel'?20:0);
+  G.power=Math.min(G.powmax, G.power+gen*dt);
+
+  let need=0;
+  ['water','food','oxy','def','nav','grade','waste'].forEach(s=>{
+    const m=slotMod(s); if(m&&m.use) need+=m.use;
+  });
+  need += G.ppl.length*0.12;
+  const powered = G.power>0.4;
+  if(powered) G.power=Math.max(0,G.power-need*dt);
+
+  // ---------- 模块产出
+  const wm=slotMod('water');
+  if(wm&&powered){
+    const e=modEff(wm.id);
+    const v={urine:1.1,filter:2.0,filterP:3.0,tide:4.2}[wm.id]||0;
+    G.water=Math.min(CFG.waMax,G.water+v*e*dt);
+    if(chance(dt*1.4)) Snd.bubble();
+  }
+  const fm=slotMod('food');
+  if(fm&&powered){
+    const e=modEff(fm.id);
+    const v={fisher:1.7,farm:3.2}[fm.id]||0;
+    G.food=Math.min(CFG.foMax,G.food+v*e*dt);
+  }
+  const om=slotMod('oxy');
+  if(om&&powered){
+    const e=modEff(om.id);
+    const v={vent:1.0,puffer:3.4}[om.id]||0;
+    G.oxy=Math.min(CFG.oxMax,G.oxy+v*e*dt);
+  }
+  // 护盾回充
+  if(has('shield')&&powered) G.shield=Math.min(G.shieldMax,G.shield+8*dt);
+  // 黄金马桶舒适度
+  if(has('goldtoilet')&&chance(dt*0.05)) Snd.flush();
+
+  // ---------- 消耗
+  const popMul=1+G.ppl.length*0.26;
+  G.water-=CFG.waDrain*G.mul.drain*popMul*dt;
+  G.food-=CFG.foDrain*G.mul.drain*popMul*dt;
+  // 缺氧海域（4 章之后）持续耗氧
+  if(G.minGen>=2) G.oxy-=0.9*dt;
+  if(G.dive) G.oxy-=7.5*dt;
+
+  let starve=0;
+  if(G.water<=0){ G.water=0; starve++; }
+  if(G.food<=0){ G.food=0; starve++; }
+  if(G.oxy<=0){ G.oxy=0; starve++; }
+  if(starve>0){
+    G.hp-=CFG.starve*starve*dt;
+    if(chance(dt*1.8)) ftext(baseX()+rnd(-44,44),SEA-100,
+      ['缺水！','缺粮！','缺氧！'][[G.water<=0,G.food<=0,G.oxy<=0].indexOf(true)]||'危！','#ff8080',15);
+  } else if(wm&&fm&&powered){
+    G.hp=Math.min(G.hpmax,G.hp+0.55*dt);
+  }
+  const comfort=G.comfort;
+  if(G.oxy<=0){ G.hp-=2*dt; }
+
+  // ---------- 幸存者自动收集
+  G.ppl.forEach(p=>{
+    p.t+=dt;
+    const sp=p.job.rate*(1+comfort*0.12);
+    if(p.t>sp){
+      p.t=0;
+      const k=pick(['wood','plas','iron','rope','cloth','fish']);
+      G.res[k]+=1; G.gain++; bump(k);
+      ftext(p.x,SEA-62,'+1','#8ff0e4',12);
+    }
+  });
+
+  // ---------- 玩家
+  const pl=G.player;
+  pl.x=lerp(pl.x,pl.tx,Math.min(1,dt*7.5));
+  pl.flip = pl.tx>pl.x?1:(pl.tx<pl.x?-1:pl.flip);
+  if(pl.actT>0){ pl.actT-=dt; if(pl.actT<=0){ pl.act=''; pl.net=null; } }
+
+  // ---------- 相机
+  const cm=G.cam;
+  let tz=1, tx=0, ty=0;
+  if(G.dive){ tz=1.28; ty=120; tx=(G.dive.chests.length?0:0); }
+  else if(G.boss){ tz=1.12; tx=(G.boss.x-W/2)*0.16; }
+  else if(G.storm.on){ tz=1.05; }
+  cm.z=lerp(cm.z,tz,Math.min(1,dt*2.2));
+  cm.x=lerp(cm.x,tx,Math.min(1,dt*2.2));
+  cm.y=lerp(cm.y,ty,Math.min(1,dt*2.2));
+
+  // ---------- 深潜
+  if(G.dive){
+    G.dive.t+=dt;
+    if(G.oxy<=0||G.dive.t>=G.dive.dur) endDive();
+  } else {
+    G.spawnT-=dt;
+    if(G.spawnT<=0){ spawnDive(); G.spawnT=rnd(34,52); }
+    if(G.diveSpot){ G.diveSpot.t+=dt; if(G.diveSpot.t>G.diveSpot.life) G.diveSpot=null; }
+  }
+
+  // ---------- 漂浮物
+  G.spawnF-=dt;
+  if(G.spawnF<=0){
+    spawnFloater();
+    G.spawnF=rnd(CFG.refresh[0],CFG.refresh[1])/(G.storm.on?1.9:1)/(1+G.zone*0.05);
+  }
+  for(let i=G.floaters.length-1;i>=0;i--){
+    const f=G.floaters[i]; f.t+=dt; f.x+=f.vx*dt*(G.storm.on?1.6:1);
+    if(f.caught){
+      const tx=baseX()+pl.x, ty=SEA-30;
+      f.x=lerp(f.x,tx,Math.min(1,dt*9)); f.y=lerp(f.y,ty,Math.min(1,dt*9));
+      if(Math.abs(f.x-tx)<9){ part(f.x,f.y,7,'#ffd23f',130,.4); G.floaters.splice(i,1); }
+      continue;
+    }
+    if(f.x<-140||f.x>W+140) G.floaters.splice(i,1);
+  }
+
+  // ---------- 猛兽
+  if(G.gt>12 && !G.boss){
+    G.spawnB-=dt;
+    if(G.spawnB<=0){
+      spawnBeast(false);
+      G.spawnB=Math.max(12, rnd(CFG.beastEvery-7,CFG.beastEvery+8)-G.zone*CFG.beastGrow);
+    }
+  }
+  const spike=has('spike'), arm=has('armor'), nav=slotMod('nav');
+  const stormCut = nav? (1-(0.35*modEff(nav.id))):1;
+  for(let i=G.beasts.length-1;i>=0;i--){
+    const b=G.beasts[i]; b.t+=dt;
+    if(b.hurt>0) b.hurt-=dt;
+    if(b.dead){ G.beasts.splice(i,1); continue; }
+    const edge=baseX()+(b.x<baseX()?-deckW()/2:deckW()/2);
+    if(b.state==='swim'){
+      b.x+=b.dir*b.spd*dt;
+      if(Math.abs(b.x-edge)<28){ b.state='bite'; b.bite=-1.1; }
+    } else {
+      b.bite+=dt;
+      if(chance(dt*6)) part(edge,SEA+8,3,'#ff6b6b',95,.4);
+      if(b.bite>1.2){
+        b.bite=0;
+        let d=b.dmg*G.mul.dmg*(spike?0.6:1)*(arm?0.85:1)*stormCut;
+        damage(d);
+        ftext(baseX()+rnd(-34,34),SEA-104,'-'+Math.round(d)+' 耐久','#ff8080',17);
+        Snd.hit();
+        if(spike&&b.hp>0){ b.hp-=8; if(b.hp<=0){ b.dead=true; G.kills++; part(b.x,b.y,16,'#ffd23f',180,.8); ftext(b.x,b.y-42,'尖刺反杀！','#ffd23f',19); } }
+      }
+    }
+  }
+
+  // ---------- 炮台自动开火
+  const dm=slotMod('def');
+  if(dm&&dm.gen>=2&&powered){
+    G.__cd=(G.__cd||0)-dt;
+    const sp={cannon:1.05,laser:0.8,biggun:1.35}[dm.id]||1.1;
+    const dps={cannon:22,laser:42,biggun:72}[dm.id]||20;
+    if(G.__cd<=0){
+      let t=null,td=1e9;
+      if(G.boss) t=G.boss;
+      else G.beasts.forEach(b=>{ const d=Math.abs(b.x-baseX()); if(d<td&&!b.dead){td=d;t=b;} });
+      if(t){
+        G.__cd=sp;
+        const mp=slotPos('def');
+        G.bullets.push({x:mp.x,y:mp.y-24,tx:t.x,ty:t.y-6,t:0,dur:0.26,dmg:dps*sp*modEff(dm.id),hostile:false,target:t});
+        Snd.cannon(); Snd.spark();
+        part(mp.x,mp.y-24,4,'#ffd23f',110,.3);
+      }
+    }
+  }
+  // EMP 麻痹
+  if(has('emp')&&powered&&chance(dt*0.22)){
+    G.beasts.forEach(b=>{ if(!b.dead){ b.hp-=6; b.hurt=0.2; part(b.x,b.y,6,'#b9a6ff',150,.5); } });
+    if(G.boss){ G.boss.hp-=10; G.boss.hurt=0.2; }
+    Snd.zap();
+  }
+
+  // ---------- 子弹
+  for(let i=G.bullets.length-1;i>=0;i--){
+    const bu=G.bullets[i]; bu.t+=dt;
+    const p=Math.min(1,bu.t/bu.dur);
+    bu.cx=lerp(bu.x,bu.tx,p); bu.cy=lerp(bu.y,bu.ty,p)-Math.sin(p*Math.PI)*30;
+    if(p>=1){
+      if(bu.hostile){
+        damage(bu.dmg);
+        part(bu.tx,bu.ty,10,'#ff6b35',160,.5); Snd.hit(); G.shake=Math.max(G.shake,8);
+      } else if(bu.target){
+        if(bu.target===G.boss){ G.boss.hp-=bu.dmg; G.boss.hurt=0.15;
+          part(bu.tx,bu.ty,5,'#ffd23f',120,.4); ftext(bu.tx,bu.ty-22,'-'+Math.round(bu.dmg),'#ffd6a5',14);
+          if(G.boss.hp<=0) onBossDown(G.boss); }
+        else if(!bu.target.dead) hitBeast(bu.target,bu.dmg,true);
+      }
+      G.bullets.splice(i,1);
+    }
+  }
+
+  // ---------- BOSS
+  if(G.boss){
+    updateBoss(dt);
+    // 点击输出由输入层处理
+  }
+
+  // ---------- 幸存者漂来
+  G.spawnP-=dt;
+  if(G.spawnP<=0&&G.ppl.length<G.pplCap+1){ spawnSurvivor(); G.spawnP=rnd(20,32); }
+  for(let i=G.survivors.length-1;i>=0;i--){
+    const s=G.survivors[i]; s.t+=dt; s.x+=s.dir*s.spd*dt;
+    if(s.dead||s.t>s.life||s.x<-140||s.x>W+140) G.survivors.splice(i,1);
+  }
+
+  // ---------- 商船
+  for(let i=G.boats.length-1;i>=0;i--){
+    const b=G.boats[i]; b.t+=dt;
+    if(!b.dead){
+      const stop=baseX()+ (b.dir>0? -deckW()/2-110 : deckW()/2+110);
+      if((b.dir>0&&b.x<stop)||(b.dir<0&&b.x>stop)){ /* 到位停住 */ }
+      else b.x+=b.dir*b.spd*dt;
+    }
+    if(b.dead||b.t>b.life||b.x<-200||b.x>W+200) G.boats.splice(i,1);
+  }
+
+  // ---------- 风暴（黑潮）
+  const st=G.storm;
+  if(!st.on&&st.warn<=0){
+    G.spawnS-=dt;
+    if(G.spawnS<=0){
+      st.warn=CFG.stormWarn; Snd.alarm();
+      toast('🌪 黑潮风暴 '+CFG.stormWarn+' 秒后抵达！','warn');
+      if(G.minGen>=2) sub('黑潮来了 —— 它会腐蚀你的平台');
+    }
+  }
+  if(st.warn>0){
+    st.warn-=dt;
+    $('alarm').classList.add('on');
+    $('alarmtxt').textContent='黑潮来袭 '+Math.ceil(st.warn)+'s';
+    if(st.warn<=0){
+      st.on=true; st.t=0; st.dur=CFG.stormDur;
+      $('alarmtxt').textContent='🌪 黑 潮 中';
+      Snd.boom(); G.shake=22; G.cam.shake=18;
+      if(!has('wall')&&!has('armor')&&chance(0.45)){
+        const ss=Object.keys(G.slots).filter(s=>s!=='waste'&&G.slots[s]&&MM[G.slots[s]]&&!MM[G.slots[s]].rep);
+        if(ss.length){ const lost=pick(ss), lid=G.slots[lost]; delete G.slots[lost]; G.lostCount=(G.lostCount||0)+1;
+          toast('💥 黑潮掀翻了【'+MM[lid].n+'】！','warn'); }
+      }
+    }
+  }
+  if(st.on){
+    st.t+=dt;
+    const corrupt=(2.0+G.zone*0.45)*G.mul.dmg*(has('armor')?0.5:1)*(has('wall')?0.75:1)*stormCut;
+    damage(corrupt*dt,true);
+    if(chance(dt*2.5)) ftext(baseX()+rnd(-70,70),SEA-124,'腐蚀 -'+Math.round(corrupt)+'/s','#b9a6ff',13);
+    if(st.t>=st.dur){
+      st.on=false; st.warn=0; G.spawnS=rnd(CFG.stormEvery[0],CFG.stormEvery[1]);
+      $('alarm').classList.remove('on'); sub('');
+      toast('☀ 风暴过去了，清点损失','good');
+    }
+  }
+
+  // ---------- 事件定时器
+  G.evT=(G.evT||34)-dt;
+  if(G.evT<=0){ G.evT=rnd(38,58); if(!UI.busy()&&!G.boss){ const e=pickEvent(); e.run(); } }
+
+  // ---------- 粒子 / 飘字
+  FX.update(dt);
+
+  if(G.shake>0) G.shake=Math.max(0,G.shake-dt*48);
+  if(G.flash>0) G.flash=Math.max(0,G.flash-dt*2.4);
+
+  // ---------- 广告模式弹幕
+  if(G.mode===1){
+    G.danmuT-=dt;
+    if(G.danmuT<=0){ G.danmuT=rnd(1.1,2.4); UI.danmu(); }
+  }
+
+  // ---------- 音乐
+  Snd.musicTick(dt);
+
+  // ---------- 失败
+  if(G.hp<=0){ G.hp=0; gameOver(G.storm.on?'黑潮腐蚀了最后一块木板。':'猛兽啃穿了你的据点。'); return; }
+
+  UI.tick(dt);
+}
+
+function damage(d,silent){
+  if(G.shield>0){
+    const a=Math.min(G.shield,d); G.shield-=a; d-=a;
+    part(baseX()+rnd(-60,60),SEA-70,5,'#80d8ff',130,.4);
+    if(d<=0) return;
+  }
+  G.hp-=d;
+  G.shake=Math.max(G.shake, silent?3:7);
+  G.player.face='sad';
+  G.__sadT=0.6;
+  if(G.__sadT) { }
+}
+
+//=====================================================================
+//  FX
+//=====================================================================
+const FX={
+  part(x,y,n,c,s,l){
+    if(!G) return;
+    if(G.parts.length>260) G.parts.splice(0,60);
+    for(let i=0;i<n;i++){
+      const a=rnd(-Math.PI,Math.PI), sp=rnd(s*0.35,s);
+      G.parts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-sp*0.35,t:0,life:l||0.7,r:rnd(1.5,3.8),c:c||'#bfe9ff'});
+    }
+  },
+  text(x,y,t,c,s){
+    if(!G) return;
+    if(G.texts.length>26) G.texts.shift();
+    G.texts.push({x,y,txt:t,color:c||'#fff',s:s||16,t:0,life:1.15,vy:-44});
+  },
+  update(dt){
+    for(let i=G.parts.length-1;i>=0;i--){
+      const p=G.parts[i]; p.t+=dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=230*dt; p.vx*=0.985;
+      if(p.t>p.life) G.parts.splice(i,1);
+    }
+    for(let i=G.texts.length-1;i>=0;i--){
+      const t=G.texts[i]; t.t+=dt; t.y+=t.vy*dt; t.vy*=0.94;
+      if(t.t>t.life) G.texts.splice(i,1);
+    }
+  }
+};
+
+//=====================================================================
+//  槽位坐标
+//=====================================================================
+const SLOTPOS={water:-0.34,energy:0.34,oxy:-0.53,food:0.53,nav:0.9,def:-0.9,pop:-0.71,grade:0.71,waste:0};
+function slotPos(s){
+  const p=SLOTPOS[s]===undefined?0:SLOTPOS[s];
+  return {x:baseX()+deckW()/2*p, y:SEA-8};
+}
+
+//=====================================================================
+//  环境
+//=====================================================================
+const CLOUDS=[]; for(let i=0;i<9;i++) CLOUDS.push({x:rnd(0,W),y:rnd(52,215),s:rnd(.55,1.6),sp:rnd(3,10),a:rnd(.3,.8)});
+const CITY=[[ -30,84,66],[40,58,46],[92,104,54],[152,70,72],[214,44,60],[1090,74,60],[1146,50,74],[1200,98,50],[1258,62,68],[262,92,26],[1010,132,34]];
+const BIRDS=[]; for(let i=0;i<5;i++) BIRDS.push({x:rnd(0,W),y:rnd(90,190),sp:rnd(14,26),ph:rnd(0,6)});
+let SKYCACHE=null;
+
+function drawSky(){
+  const dm=G.gen1;                     // 1=白天 0=夜
+  const top=mixc('#0a1c3a','#1a5f96',dm), mid=mixc('#14406b','#63b8d4',dm), hor=mixc('#22485f','#ffd9a0',dm);
+  const g=ctx.createLinearGradient(0,0,0,SEA+8);
+  g.addColorStop(0,top); g.addColorStop(.6,mid); g.addColorStop(1,hor);
+  ctx.fillStyle=g; ctx.fillRect(-40,-40,W+80,SEA+48);
+
+  // 星
+  if(dm<0.65){
+    ctx.save(); ctx.globalAlpha=(0.65-dm)*1.5; ctx.fillStyle='#fff';
+    for(let i=0;i<54;i++){
+      const x=(i*137.5)%W, y=(i*73.7)%320, s=(i%7===0)?2:1.3;
+      ctx.fillRect(x,y,s,s);
+    }
+    ctx.restore();
+  }
+  // 日月
+  const p=clamp((G.dayT%110)/110,0,1);
+  const sx=W*0.14+p*W*0.72, sy=SEA-150-Math.sin(p*Math.PI)*205;
+  if(dm>0.5){
+    ctx.save(); ctx.globalAlpha=(dm-0.5)*2;
+    ctx.fillStyle='#ffd23f'; ctx.beginPath(); ctx.arc(sx,sy,32,0,6.3); ctx.fill();
+    ctx.globalAlpha=(dm-0.5)*2*0.26; ctx.beginPath(); ctx.arc(sx,sy,60,0,6.3); ctx.fill();
+    ctx.restore();
+  } else {
+    ctx.save(); ctx.globalAlpha=(0.5-dm)*2;
+    ctx.fillStyle='#eef6fb'; ctx.beginPath(); ctx.arc(sx,sy,23,0,6.3); ctx.fill();
+    ctx.fillStyle=mixc('#123a5e','#5aa9c6',dm); ctx.beginPath(); ctx.arc(sx+12,sy-9,20,0,6.3); ctx.fill();
+    ctx.restore();
+  }
+  // 云（视差）
+  ctx.save();
+  CLOUDS.forEach(c=>{
+    c.x+=c.sp*0.016; if(c.x>W+90) c.x=-90;
+    ctx.globalAlpha=c.a*(0.45+dm*0.55);
+    ctx.fillStyle= dm>0.5?'#ffffff':'#6d8ba4';
+    ctx.beginPath();
+    ctx.ellipse(c.x,c.y,50*c.s,18*c.s,0,0,6.3);
+    ctx.ellipse(c.x-34*c.s,c.y+6*c.s,30*c.s,13*c.s,0,0,6.3);
+    ctx.ellipse(c.x+36*c.s,c.y+7*c.s,34*c.s,14*c.s,0,0,6.3);
+    ctx.fill();
+  });
+  ctx.restore();
+  // 鸟
+  if(dm>0.45){
+    ctx.save(); ctx.strokeStyle='rgba(20,40,60,.5)'; ctx.lineWidth=2; ctx.globalAlpha=(dm-0.45)*2;
+    BIRDS.forEach(b=>{
+      b.x+=b.sp*0.016; if(b.x>W+30) b.x=-30;
+      const f=Math.sin(G.t*7+b.ph)*4;
+      ctx.beginPath(); ctx.moveTo(b.x-8,b.y+f); ctx.quadraticCurveTo(b.x,b.y-5+f,b.x+8,b.y+f); ctx.stroke();
+    });
+    ctx.restore();
+  }
+}
+function drawCity(){
+  const dm=G.gen1;
+  const c=mixc('#05121f','#1b4d70',dm*0.9);
+  ctx.fillStyle=c;
+  const bob=Math.sin(G.t*0.7)*2.4;
+  CITY.forEach(b=>{
+    const y=SEA-b.h+bob;
+    ctx.fillRect(b.x,y,b.w,b.h+8);
+    ctx.fillStyle='rgba(255,255,255,.05)'; ctx.fillRect(b.x,y,b.w,4);
+    ctx.fillStyle=c;
+    // 窗
+    if(dm<0.5){
+      ctx.save(); ctx.fillStyle='rgba(255,210,63,.5)'; ctx.globalAlpha=(0.5-dm)*1.6;
+      for(let wy=y+8; wy<SEA; wy+=13){ for(let wx=b.x+5; wx<b.x+b.w-5; wx+=11){
+        if(((wx*7+wy*13)|0)%3===0) ctx.fillRect(wx,wy,4,5); } }
+      ctx.restore(); ctx.fillStyle=c;
+    }
+  });
+  // 尖顶
+  ctx.beginPath(); ctx.moveTo(1006,SEA-134); ctx.lineTo(1023,SEA-176); ctx.lineTo(1040,SEA-134); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(262,SEA-98); ctx.lineTo(275,SEA-130); ctx.lineTo(288,SEA-98); ctx.fill();
+}
+function wave(y,amp,len,ph,color,alpha,foam){
+  ctx.save(); ctx.globalAlpha=alpha===undefined?1:alpha;
+  ctx.fillStyle=color;
+  ctx.beginPath(); ctx.moveTo(-60,H+60);
+  for(let x=-60;x<=W+60;x+=9){
+    ctx.lineTo(x, y+Math.sin(x/len+ph)*amp+Math.sin(x/(len*0.36)+ph*1.8)*amp*0.32);
+  }
+  ctx.lineTo(W+60,H+60); ctx.closePath(); ctx.fill();
+  if(foam){
+    ctx.strokeStyle=foam; ctx.lineWidth=2.2; ctx.globalAlpha=alpha*0.7;
+    ctx.beginPath();
+    for(let x=-60;x<=W+60;x+=12){
+      const yy=y+Math.sin(x/len+ph)*amp+Math.sin(x/(len*0.36)+ph*1.8)*amp*0.32;
+      if(x===-60) ctx.moveTo(x,yy); else ctx.lineTo(x,yy);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+function drawSea(){
+  const dm=G.gen1, st=G.storm.on?1.9:1;
+  const deep=mixc('#04203a','#0a5f90',dm), mid=mixc('#062c4a','#0f7db2',dm), fore=mixc('#03182b','#0a5c8c',dm);
+  const g=ctx.createLinearGradient(0,SEA-20,0,H);
+  g.addColorStop(0,mixc('#1189bd','#49c4ea',dm));
+  g.addColorStop(0.45,mixc('#073f68','#1281bd',dm));
+  g.addColorStop(1,mixc('#010b16','#04304f',dm));
+  ctx.fillStyle=g; ctx.fillRect(-60,SEA-22,W+120,H-SEA+80);
+  // 水下暗影
+  ctx.save(); ctx.globalAlpha=.2; ctx.fillStyle='#01121e';
+  ctx.beginPath(); ctx.ellipse(baseX(),SEA+140,deckW()*0.95,48,0,0,6.3); ctx.fill(); ctx.restore();
+  // 光柱
+  if(dm>0.4){
+    ctx.save(); ctx.globalAlpha=(dm-0.4)*0.28;
+    const lg=ctx.createLinearGradient(0,SEA,0,H);
+    lg.addColorStop(0,'rgba(190,240,255,.7)'); lg.addColorStop(1,'rgba(190,240,255,0)');
+    ctx.fillStyle=lg;
+    for(let i=0;i<5;i++){
+      const cx=((i*263+G.t*9)%(W+240))-120;
+      ctx.beginPath(); ctx.moveTo(cx-26,SEA); ctx.lineTo(cx+26,SEA); ctx.lineTo(cx+72,H); ctx.lineTo(cx-72,H); ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+  }
+  const ph=G.t*1.05;
+  wave(SEA+12, 7*st,152,ph,mixc('#0a4a72','#1c86b8',dm),0.9,'rgba(223,243,255,.5)');
+  wave(SEA+52,11*st,112,ph*1.28+1.7,mixc('#083a5c','#166f9f',dm),0.92);
+  wave(SEA+108,15*st,88,ph*1.55+3.1,mixc('#062c48','#0f5a85',dm),1);
+  return {deep,mid,fore};
+}
+
+//=====================================================================
+//  据点
+//=====================================================================
+function rr(x,y,w,h,r){
+  ctx.beginPath();
+  if(ctx.roundRect) ctx.roundRect(x,y,w,h,r); else ctx.rect(x,y,w,h);
+}
+function stroke2(w,c){ ctx.strokeStyle=c||'#06203a'; ctx.lineWidth=w||2.6; ctx.stroke(); }
+function gloss(x,y,w,h,a){ ctx.save(); ctx.globalAlpha=a||.28; ctx.fillStyle='#fff';
+  ctx.fillRect(x,y,w,h); ctx.restore(); }
+
+function drawDeck(){
+  const w=deckW(), x0=baseX()-w/2, y=SEA-8;
+  // 支撑柱
+  ctx.fillStyle='#6d4520';
+  const n=Math.max(3,Math.round(w/72));
+  for(let i=0;i<n;i++){
+    const px=x0+16+i*(w-32)/(n-1||1);
+    ctx.fillRect(px-5,y+10,10,44);
+    ctx.fillStyle='rgba(0,0,0,.18)'; ctx.fillRect(px+2,y+10,3,44); ctx.fillStyle='#6d4520';
+  }
+  ctx.save(); ctx.globalAlpha=.3; ctx.fillStyle='#01121e'; ctx.fillRect(x0,y+40,w,18); ctx.restore();
+  // 木板
+  const pn=Math.max(7,Math.round(w/26));
+  for(let i=0;i<pn;i++){
+    const px=x0+i*(w/pn);
+    ctx.fillStyle= i%2?'#ad7640':'#9c6a35';
+    ctx.fillRect(px,y,w/pn+1,15);
+    ctx.strokeStyle='rgba(80,48,18,.85)'; ctx.lineWidth=1.4; ctx.strokeRect(px,y,w/pn+1,15);
+    gloss(px+2,y+2,w/pn-4,2,.1);
+  }
+  ctx.fillStyle='#7a4d24'; ctx.fillRect(x0,y+14,w,4);
+  // 加固墙体
+  if(cnt('wall')>0){
+    ctx.fillStyle='#c9d6dd';
+    ctx.fillRect(x0-9,y-36,11,38); ctx.fillRect(x0+w-2,y-36,11,38);
+    ctx.fillStyle='#93a3ad'; ctx.fillRect(x0-9,y-36,11,5); ctx.fillRect(x0+w-2,y-36,11,5);
+    stroke2(2,'#5d6d77'); ctx.strokeRect(x0-9,y-36,11,38); ctx.strokeRect(x0+w-2,y-36,11,38);
+  }
+  // 装甲板
+  if(cnt('armor')>0){
+    ctx.fillStyle='#8fa3ad';
+    ctx.fillRect(x0-13,y-30,6,32); ctx.fillRect(x0+w+7,y-30,6,32);
+    ctx.fillStyle='#c9d6dd';
+    for(let i=0;i<4;i++){ ctx.fillRect(x0-13,y-28+i*8,6,4); ctx.fillRect(x0+w+7,y-28+i*8,6,4); }
+  }
+  // 防护尖刺
+  if(has('spike')){
+    ctx.fillStyle='#e6eff4'; ctx.strokeStyle='#7d8f9a'; ctx.lineWidth=1.4;
+    [[x0-3,-1],[x0+w+3,1],[baseX()-60,-1],[baseX()+60,1],[baseX()-24,-1],[baseX()+24,1]].forEach(s=>{
+      ctx.beginPath(); ctx.moveTo(s[0],y); ctx.lineTo(s[0]+s[1]*3,y-8);
+      ctx.lineTo(s[0]+s[1]*28,y-3); ctx.lineTo(s[0]+s[1]*5,y+5); ctx.closePath(); ctx.fill(); ctx.stroke();
+    });
+  }
+  // 护盾
+  if(G.shield>0){
+    ctx.save();
+    ctx.globalAlpha=0.24+Math.sin(G.t*4)*0.08;
+    const sg=ctx.createRadialGradient(baseX(),SEA-40,10,baseX(),SEA-40,deckW()*0.72);
+    sg.addColorStop(0,'rgba(128,216,255,0)'); sg.addColorStop(.7,'rgba(128,216,255,.5)'); sg.addColorStop(1,'rgba(128,216,255,.9)');
+    ctx.fillStyle=sg;
+    ctx.beginPath(); ctx.ellipse(baseX(),SEA-34,deckW()*0.62,92,0,0,6.3); ctx.fill();
+    ctx.globalAlpha=.5; ctx.strokeStyle='#80d8ff'; ctx.lineWidth=2.4; ctx.stroke();
+    ctx.restore();
+  }
+}
+function drawToilet(){
+  const x=baseX(), y=SEA-8, bw=94, bh=64;
+  ctx.save(); ctx.translate(x,y);
+  ctx.save(); ctx.globalAlpha=.2; ctx.fillStyle='#000';
+  ctx.beginPath(); ctx.ellipse(0,3,bw/2+8,7,0,0,6.3); ctx.fill(); ctx.restore();
+  // 屋体
+  ctx.fillStyle='#f0eade'; ctx.fillRect(-bw/2,-bh,bw,bh);
+  gloss(-bw/2,-bh,bw,5,.35);
+  stroke2(3); ctx.strokeRect(-bw/2,-bh,bw,bh);
+  // 屋顶
+  ctx.fillStyle='#c9d6dd'; ctx.beginPath();
+  ctx.moveTo(-bw/2-9,-bh); ctx.lineTo(0,-bh-23); ctx.lineTo(bw/2+9,-bh); ctx.closePath(); ctx.fill(); stroke2(3); ctx.stroke();
+  // 门
+  ctx.fillStyle='#c3b8a4'; ctx.fillRect(-13,-44,26,44); stroke2(2.4); ctx.strokeRect(-13,-44,26,44);
+  ctx.fillStyle='#ffd23f'; ctx.beginPath(); ctx.arc(7,-22,2.8,0,6.3); ctx.fill();
+  // 窗
+  const win=has('goldtoilet')?'#ffe9a8':'#8fd6f5';
+  ctx.fillStyle=win; ctx.fillRect(-39,-46,21,21); stroke2(2.4); ctx.strokeRect(-39,-46,21,21);
+  ctx.fillStyle=win; ctx.fillRect(18,-46,21,21); stroke2(2.4); ctx.strokeRect(18,-46,21,21);
+  // 黄金马桶升级：屋顶金饰
+  if(has('goldtoilet')){
+    ctx.fillStyle='#ffd23f'; ctx.beginPath(); ctx.arc(0,-bh-27,5,0,6.3); ctx.fill(); stroke2(2,'#b96a00'); ctx.stroke();
+  }
+  // WC 牌
+  ctx.fillStyle='#06203a'; rr(-18,-bh-40,36,18,4); ctx.fill();
+  ctx.fillStyle='#ffd23f'; ctx.font='900 13px system-ui,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('WC',0,-bh-30);
+  ctx.restore();
+}
+// ---------- 模块图标（世界内）
+function drawModIcon(id,x,y,s,old){
+  const p=slotPos(MM[id].s);
+  ctx.save(); ctx.translate(x,y); ctx.scale(s,s);
+  if(old) ctx.globalAlpha=0.55;
+  const O='#06203a';
+  const P=(col,draw)=>{ ctx.fillStyle=col; draw(); stroke2(2.4,O); };
+  if(id==='urine'){
+    ctx.fillStyle='#c9b78c'; rr(-11,-20,22,30,4); ctx.fill(); stroke2(2.4,O); ctx.stroke();
+    ctx.fillStyle='#ffd23f'; ctx.beginPath(); ctx.arc(0,-24,5,0,6.3); ctx.fill(); stroke2(2,O); ctx.stroke();
+    ctx.fillStyle='#8fd6f5'; ctx.beginPath(); ctx.ellipse(0,14,4,5,0,0,6.3); ctx.fill();
+  } else if(id==='filter'||id==='filterP'||id==='tide'){
+    const gold=id!=='filter';
+    ctx.fillStyle=gold?'#ffd23f':'#2ec4b6'; ctx.fillRect(-12,-24,24,12); stroke2(2.4,O); ctx.strokeRect(-12,-24,24,12);
+    ctx.fillStyle=gold?'#ffe9a8':'#7fe3d8'; ctx.beginPath(); ctx.ellipse(0,-2,16,19,0,0,6.3); ctx.fill(); stroke2(2.4,O); ctx.stroke();
+    ctx.fillStyle=O; ctx.beginPath(); ctx.arc(0,-6,4.2,0,6.3); ctx.fill();
+    ctx.strokeStyle='#8fa3ad'; ctx.lineWidth=3.2; ctx.beginPath(); ctx.moveTo(12,-2); ctx.lineTo(24,-2); ctx.stroke();
+    ctx.fillStyle='#8fd6f5'; ctx.beginPath(); ctx.ellipse(0,12,3.6,4.6,0,0,6.3); ctx.fill();
+    if(id==='tide'){ ctx.fillStyle='#b9a6ff'; ctx.beginPath(); ctx.arc(0,-28,5,0,6.3); ctx.fill(); stroke2(2,O); ctx.stroke(); }
+  } else if(id==='solar'||id==='eel'||id==='nuke'){
+    ctx.strokeStyle='#8fa3ad'; ctx.lineWidth=3.6; ctx.beginPath(); ctx.moveTo(0,-4); ctx.lineTo(0,12); ctx.stroke();
+    if(id==='solar'){
+      ctx.save(); ctx.translate(0,-16); ctx.rotate(-0.3);
+      ctx.fillStyle='#3b6ea5'; ctx.fillRect(-21,-11,42,21); stroke2(2.4,O); ctx.strokeRect(-21,-11,42,21);
+      ctx.strokeStyle='#8fd6f5'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(-21,-3); ctx.lineTo(21,-3); ctx.moveTo(-6,-11); ctx.lineTo(-6,10); ctx.moveTo(7,-11); ctx.lineTo(7,10); ctx.stroke(); ctx.restore();
+    } else if(id==='eel'){
+      ctx.fillStyle='#4a7f5e'; rr(-16,-30,32,26,7); ctx.fill(); stroke2(2.4,O); ctx.stroke();
+      ctx.fillStyle='#ffd23f';
+      ctx.beginPath(); ctx.moveTo(-14,-22); ctx.lineTo(14,-10); ctx.lineTo(-14,0); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle='#ffd23f'; ctx.lineWidth=2.6;
+      if(Math.sin(G.t*9)>0){ ctx.beginPath(); ctx.moveTo(-20,-16); ctx.lineTo(-28,-24); ctx.moveTo(20,-16); ctx.lineTo(28,-24); ctx.stroke(); }
+      ctx.fillStyle=O; ctx.beginPath(); ctx.arc(-8,-22,2.4,0,6.3); ctx.fill();
+    } else {
+      ctx.fillStyle='#5d6d77'; rr(-17,-30,34,26,6); ctx.fill(); stroke2(2.4,O); ctx.stroke();
+      ctx.fillStyle='#7c4dff'; ctx.beginPath(); ctx.arc(0,-17,9,0,6.3); ctx.fill(); stroke2(2.2,O); ctx.stroke();
+      ctx.strokeStyle='#b9a6ff'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(-9,-17); ctx.lineTo(-14,-24); ctx.moveTo(9,-17); ctx.lineTo(14,-24); ctx.stroke();
+    }
+  } else if(id==='vent'||id==='puffer'){
+    if(id==='vent'){
+      ctx.fillStyle='#c9d6dd'; rr(-14,-20,28,20,5); ctx.fill(); stroke2(2.4,O); ctx.stroke();
+      ctx.strokeStyle='#8fa3ad'; ctx.lineWidth=2.4;
+      for(let i=0;i<3;i++){ ctx.beginPath(); ctx.moveTo(-9,-15+i*6); ctx.lineTo(9,-15+i*6); ctx.stroke(); }
+    } else {
+      ctx.fillStyle='#ffd23f'; ctx.beginPath(); ctx.arc(0,-6,18,0,6.3); ctx.fill(); stroke2(2.6,O); ctx.stroke();
+      ctx.fillStyle='#fff6d0'; ctx.beginPath(); ctx.arc(0,-6,11,0,6.3); ctx.fill();
+      ctx.fillStyle=O; ctx.beginPath(); ctx.arc(-6,-9,2.4,0,6.3); ctx.fill(); ctx.beginPath(); ctx.arc(6,-9,2.4,0,6.3); ctx.fill();
+      ctx.strokeStyle='#b96a00'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(0,-3,4,0.2,Math.PI-0.2); ctx.stroke();
+      ctx.fillStyle='#8fd6f5';
+      for(let i=0;i<3;i++){ const yy=-32-((G.t*22+i*13)%30); ctx.globalAlpha=Math.max(0,1-( -yy-32)/30);
+        ctx.beginPath(); ctx.arc(-10+i*10,yy,3,0,6.3); ctx.fill(); ctx.globalAlpha=1; }
+    }
+  } else if(id==='fisher'||id==='farm'){
+    if(id==='fisher'){
+      ctx.fillStyle='#c89a5b'; ctx.fillRect(-13,-14,26,18); stroke2(2.4,O); ctx.strokeRect(-13,-14,26,18);
+      ctx.strokeStyle='#e0c893'; ctx.lineWidth=2.8; ctx.beginPath(); ctx.moveTo(9,-14); ctx.lineTo(24,-38); ctx.stroke();
+      ctx.strokeStyle='#fff'; ctx.lineWidth=1.4; ctx.beginPath(); ctx.moveTo(24,-38); ctx.lineTo(24,-18); ctx.stroke();
+      ctx.fillStyle='#8fd6f5'; ctx.beginPath(); ctx.ellipse(24,-16,5.5,3.6,0,0,6.3); ctx.fill();
+    } else {
+      ctx.fillStyle='#8a5a2b'; rr(-20,-10,40,12,3); ctx.fill(); stroke2(2.4,O); ctx.stroke();
+      ctx.fillStyle='#4caf50';
+      for(let i=0;i<4;i++){ ctx.beginPath(); ctx.ellipse(-14+i*9,-16,5,8,0,0,6.3); ctx.fill(); stroke2(1.8,O); ctx.stroke(); }
+      ctx.fillStyle='#ff6b35'; ctx.beginPath(); ctx.arc(-14,-20,3,0,6.3); ctx.fill(); ctx.beginPath(); ctx.arc(13,-20,3,0,6.3); ctx.fill();
+    }
+  } else if(id==='gps'||id==='light'||id==='emp'){
+    if(id==='gps'){
+      ctx.fillStyle='#3b6ea5'; rr(-13,-20,26,22,5); ctx.fill(); stroke2(2.4,O); ctx.stroke();
+      ctx.fillStyle='#8fd6f5'; ctx.beginPath(); ctx.arc(0,-9,7,0,6.3); ctx.fill();
+      ctx.strokeStyle='#ffd23f'; ctx.lineWidth=2.6; ctx.beginPath(); ctx.moveTo(0,-9); ctx.lineTo(4,-14); ctx.stroke();
+    } else if(id==='light'){
+      ctx.fillStyle='#efe9dc'; ctx.beginPath(); ctx.moveTo(-13,10); ctx.lineTo(-8,-24); ctx.lineTo(8,-24); ctx.lineTo(13,10); ctx.closePath(); ctx.fill(); stroke2(2.6,O); ctx.stroke();
+      ctx.fillStyle='#ff6b35'; ctx.fillRect(-9,-12,18,5); ctx.fillRect(-10,0,20,5);
+      ctx.fillStyle='#ffd23f'; ctx.beginPath(); ctx.arc(0,-30,7,0,6.3); ctx.fill(); stroke2(2.4,O); ctx.stroke();
+      ctx.save(); ctx.globalAlpha=.3+Math.sin(G.t*3)*.2; ctx.fillStyle='#ffd23f';
+      ctx.beginPath(); ctx.moveTo(0,-30); ctx.lineTo(-40,-52); ctx.lineTo(-40,-8); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(0,-30); ctx.lineTo(40,-52); ctx.lineTo(40,-8); ctx.closePath(); ctx.fill(); ctx.restore();
+    } else {
+      ctx.fillStyle='#5d6d77'; rr(-16,-22,32,26,5); ctx.fill(); stroke2(2.4,O); ctx.stroke();
+      ctx.strokeStyle='#b9a6ff'; ctx.lineWidth=2.6;
+      for(let i=0;i<3;i++){ const r=6+i*7; ctx.beginPath(); ctx.arc(0,-9,r,-2.4,-0.7); ctx.stroke(); }
+    }
+  } else if(id==='cannon'||id==='laser'||id==='biggun'){
+    ctx.fillStyle='#8a5a2b'; rr(-16,-12,32,16,3); ctx.fill(); stroke2(2.4,O); ctx.stroke();
+    const col={cannon:'#ffd23f',laser:'#7c4dff',biggun:'#ff6b35'}[id];
+    if(id==='cannon'){
+      ctx.fillStyle=col; ctx.beginPath(); ctx.arc(0,-16,13,0,6.3); ctx.fill(); stroke2(2.6,'#b96a00'); ctx.stroke();
+    } else {
+      ctx.fillStyle=col; rr(-11,-30,22,22,4); ctx.fill(); stroke2(2.6,O); ctx.stroke();
+      ctx.fillStyle='#fff6d0'; ctx.beginPath(); ctx.arc(0,-19,5,0,6.3); ctx.fill();
+    }
+    const aim=G.__aim||0;
+    ctx.save(); ctx.translate(0,-18); ctx.rotate(aim);
+    ctx.fillStyle=col; ctx.fillRect(0,-6,30*(id==='biggun'?1.35:1),12); stroke2(2.2,O); ctx.strokeRect(0,-6,30*(id==='biggun'?1.35:1),12);
+    ctx.restore();
+    ctx.fillStyle=O; ctx.beginPath(); ctx.arc(0,-16,4.4,0,6.3); ctx.fill();
+  } else if(id==='goldtoilet'){
+    ctx.fillStyle='#ffd23f'; rr(-13,-6,26,12,4); ctx.fill(); stroke2(2.4,'#b96a00'); ctx.stroke();
+    ctx.fillStyle='#ffe9a8'; rr(-11,-24,22,18,5); ctx.fill(); stroke2(2.4,'#b96a00'); ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(0,-15,3.4,0,6.3); ctx.fill();
+  } else if(id==='bed'||id==='bunk'||id==='cabin'){
+    ctx.fillStyle='#8a5a2b'; rr(-20,-8,40,12,3); ctx.fill(); stroke2(2.4,O); ctx.stroke();
+    ctx.fillStyle='#efe9dc'; rr(-20,-16,40,9,3); ctx.fill(); stroke2(2.2,O); ctx.stroke();
+    if(id!=='bed'){ ctx.fillStyle='#c9d6dd'; rr(-20,-30,40,9,3); ctx.fill(); stroke2(2.2,O); ctx.stroke(); }
+    if(id==='cabin'){ ctx.fillStyle='#8fd6f5'; ctx.fillRect(-11,-28,9,10); stroke2(1.8,O); ctx.strokeRect(-11,-28,9,10); }
+    ctx.fillStyle='#c9d6dd'; rr(-19,-24,15,7,2); ctx.fill();
+  } else if(id==='wall'||id==='armor'||id==='shield'){
+    if(id==='wall'){
+      ctx.fillStyle='#c9d6dd'; rr(-24,-28,48,32,3); ctx.fill(); stroke2(2.6,'#5d6d77'); ctx.stroke();
+      ctx.fillStyle='#93a3ad'; ctx.fillRect(-24,-28,48,6);
+      ctx.strokeStyle='#7d8f9a'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(0,-22); ctx.lineTo(0,4); ctx.stroke();
+    } else if(id==='armor'){
+      ctx.fillStyle='#8fa3ad'; rr(-24,-28,48,32,5); ctx.fill(); stroke2(2.6,O); ctx.stroke();
+      ctx.fillStyle='#c9d6dd'; for(let i=0;i<3;i++) ctx.fillRect(-20,-24+i*10,40,4);
+    } else {
+      ctx.strokeStyle='#80d8ff'; ctx.lineWidth=3; ctx.beginPath(); ctx.ellipse(0,-8,26,30,0,0,6.3); ctx.stroke();
+      ctx.save(); ctx.globalAlpha=.3; ctx.fillStyle='#80d8ff'; ctx.beginPath(); ctx.ellipse(0,-8,26,30,0,0,6.3); ctx.fill(); ctx.restore();
+      ctx.fillStyle='#2979ff'; ctx.beginPath(); ctx.arc(0,-8,7,0,6.3); ctx.fill(); stroke2(2.2,O); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+function drawModules(){
+  for(const s in G.slots){
+    const id=G.slots[s]; if(!id) continue;
+    const p=slotPos(s);
+    const old=isOld(id);
+    drawModIcon(id,p.x,p.y-4,1,old);
+    if(old){
+      ctx.save(); ctx.fillStyle='#ff4d4d'; ctx.font='900 11px system-ui'; ctx.textAlign='center';
+      ctx.fillText('过时',p.x,p.y-44); ctx.restore();
+    }
+    // 工作气泡
+    const m=MM[id];
+    if(!old && G.power>0.4){
+      if((id==='filter'||id==='filterP'||id==='tide')&&chance(0.22))
+        FX.part(p.x+8,p.y-26,1,'#8fd6f5',40,.5);
+      if(id==='puffer'&&chance(0.2))
+        FX.part(p.x,p.y-30,1,'#b9a6ff',46,.6);
+      if(id==='eel'&&chance(0.09))
+        FX.part(p.x+rnd(-14,14),p.y-30,1,'#ffd23f',70,.35);
+    }
+  }
+}
+
+//=====================================================================
+//  角色
+//=====================================================================
+function drawMan(x,y,sc,skin,cloth,hair,face,act,actT,ang,flip){
+  ctx.save(); ctx.translate(x,y); ctx.scale(sc*(flip||1),sc);
+  // 腿
+  ctx.strokeStyle=skin; ctx.lineWidth=5.2; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(-3,1); ctx.lineTo(-4.5,12); ctx.moveTo(3,1); ctx.lineTo(4.5,12); ctx.stroke();
+  // 身体
+  ctx.fillStyle=cloth; ctx.beginPath();
+  ctx.moveTo(-8.5,-16); ctx.lineTo(8.5,-16); ctx.lineTo(10.5,3); ctx.lineTo(-10.5,3); ctx.closePath();
+  ctx.fill(); ctx.strokeStyle='#06203a'; ctx.lineWidth=2; ctx.stroke();
+  // 手臂
+  ctx.strokeStyle=skin; ctx.lineWidth=4.6;
+  if(act==='net'){
+    const p=1-(actT/0.36);
+    const ex=lerp(0,Math.cos(ang)*22,p), ey=lerp(-12,-12+Math.sin(ang)*11,p);
+    ctx.beginPath(); ctx.moveTo(-6,-12); ctx.lineTo(ex,ey); ctx.stroke();
+    ctx.save(); ctx.translate(ex,ey); ctx.rotate(ang);
+    ctx.strokeStyle='#c89a5b'; ctx.lineWidth=2.6; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(17,0); ctx.stroke();
+    ctx.strokeStyle='#e0c893'; ctx.lineWidth=1.8; ctx.beginPath(); ctx.ellipse(19,0,7.5,6.5,0,0,6.3); ctx.stroke();
+    ctx.restore();
+    ctx.beginPath(); ctx.moveTo(6,-12); ctx.lineTo(9,2); ctx.stroke();
+  } else {
+    const sw=Math.sin(G.t*2.4)*1.5;
+    ctx.beginPath(); ctx.moveTo(-6,-12); ctx.lineTo(-8+sw,2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(6,-12); ctx.lineTo(8-sw,2); ctx.stroke();
+  }
+  // 头
+  ctx.fillStyle=skin; ctx.beginPath(); ctx.arc(0,-22,9.2,0,6.3); ctx.fill();
+  ctx.strokeStyle='#06203a'; ctx.lineWidth=1.8; ctx.stroke();
+  if(hair==='bald'){
+    ctx.save(); ctx.globalAlpha=.16; ctx.fillStyle='#fff';
+    ctx.beginPath(); ctx.arc(0,-24,7.5,Math.PI*1.08,Math.PI*1.92); ctx.fill(); ctx.restore();
+  } else if(hair){
+    ctx.fillStyle=hair; ctx.beginPath(); ctx.arc(0,-25,9.4,Math.PI*1.02,Math.PI*1.98); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0,-30,9.6,5,0,0,6.3); ctx.fill();
+  }
+  // 脸
+  ctx.fillStyle='#2b1b12';
+  ctx.beginPath(); ctx.arc(-3.3,-23,1.25,0,6.3); ctx.fill();
+  ctx.beginPath(); ctx.arc(3.3,-23,1.25,0,6.3); ctx.fill();
+  ctx.strokeStyle='#2b1b12'; ctx.lineWidth=1.25; ctx.beginPath();
+  if(face==='sad') ctx.arc(0,-15.5,3.6,Math.PI*1.16,Math.PI*1.84);
+  else if(face==='angry'){ ctx.moveTo(-4,-25); ctx.lineTo(-1,-23.5); ctx.moveTo(4,-25); ctx.lineTo(1,-23.5); ctx.arc(0,-16,3.2,Math.PI*1.15,Math.PI*1.85); }
+  else ctx.arc(0,-20.5,3.6,0.28,Math.PI-0.28);
+  ctx.stroke();
+  ctx.restore();
+}
+function drawPlayer(){
+  const pl=G.player, x=baseX()+pl.x, y=SEA-22;
+  let ang=0;
+  if(pl.act==='net'&&pl.net) ang=Math.atan2(pl.net.y-(y-12),pl.net.x-x);
+  const face=(G.__sadT>0)?'sad':'happy';
+  drawMan(x,y,1.18,'#f2c49b','#f7f3ea','bald',face,pl.act,pl.actT,ang,pl.flip);
+}
+function drawPeople(){
+  const hue=['#cfe9f8','#ffd6a5','#c8f0c0','#e8c8f0'];
+  G.ppl.forEach(p=>{
+    const bob=Math.sin(G.t*2.2+p.t*3)*1.7;
+    drawMan(p.x,SEA-22+bob,0.94,'#f2c49b',hue[p.hue%4],p.hue===0?'#3b2a1a':null,'happy','',0,0,1);
+    ctx.save(); ctx.font='900 10px system-ui'; ctx.textAlign='center'; ctx.fillStyle='#fff';
+    ctx.strokeStyle='rgba(4,22,42,.9)'; ctx.lineWidth=3;
+    ctx.strokeText(p.job.i,p.x,SEA-58+bob); ctx.fillText(p.job.i,p.x,SEA-58+bob); ctx.restore();
+  });
+}
+
+//=====================================================================
+//  实体绘制
+//=====================================================================
+function drawFloater(f){
+  const y=f.y+Math.sin(G.t*2.3+f.ph)*3.2;
+  ctx.save(); ctx.translate(f.x,y); ctx.rotate(Math.sin(G.t*1.3+f.ph)*0.09); ctx.scale(f.sc,f.sc);
+  ctx.save(); ctx.globalAlpha=.2; ctx.fillStyle='#012233';
+  ctx.beginPath(); ctx.ellipse(0,13,22,5.5,0,0,6.3); ctx.fill(); ctx.restore();
+  const O='#06203a';
+  if(f.draw==='plank'){
+    ctx.fillStyle='#ad7640'; ctx.fillRect(-22,-7,44,13); stroke2(2,O); ctx.strokeRect(-22,-7,44,13);
+    ctx.fillStyle='#8a5a2b'; ctx.fillRect(-22,2,44,4);
+    ctx.fillStyle='#c89a5b'; ctx.fillRect(-22,-7,7,13);
+  } else if(f.draw==='barrel'){
+    ctx.fillStyle='#7fe3d8'; rr(-14,-14,28,28,7); ctx.fill(); stroke2(2.2,'#1b8f86'); ctx.stroke();
+    ctx.fillStyle='#2ec4b6'; ctx.fillRect(-14,-6,28,4); ctx.fillRect(-14,4,28,4);
+  } else if(f.draw==='metal'){
+    ctx.fillStyle='#c2ced6'; ctx.beginPath(); ctx.moveTo(-18,-10); ctx.lineTo(10,-15); ctx.lineTo(20,6); ctx.lineTo(-8,12); ctx.closePath(); ctx.fill(); stroke2(2,O); ctx.stroke();
+    ctx.fillStyle='#93a3ad'; ctx.beginPath(); ctx.moveTo(-18,-10); ctx.lineTo(10,-15); ctx.lineTo(3,-4); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle='#6f7f89'; ctx.lineWidth=1.4; ctx.beginPath(); ctx.moveTo(-4,-2); ctx.lineTo(14,4); ctx.stroke();
+  } else if(f.draw==='rope'){
+    ctx.strokeStyle='#e0c893'; ctx.lineWidth=5; ctx.beginPath(); ctx.arc(0,0,13,0,6.3); ctx.stroke();
+    ctx.strokeStyle='#bfa376'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(0,0,13,0.6,3.6); ctx.stroke();
+  } else if(f.draw==='cloth'){
+    ctx.fillStyle='#d98cb3'; ctx.beginPath(); ctx.moveTo(-16,-8); ctx.quadraticCurveTo(0,-18,16,-8);
+    ctx.quadraticCurveTo(10,10,0,6); ctx.quadraticCurveTo(-10,10,-16,-8); ctx.fill(); stroke2(2,O); ctx.stroke();
+    ctx.fillStyle='#b06b90'; ctx.fillRect(-14,-2,10,3);
+  } else if(f.draw==='fish'){
+    const j=Math.sin(G.t*7+f.ph)*4;
+    ctx.fillStyle='#8fd6f5'; ctx.beginPath(); ctx.ellipse(0,j,17,9,0,0,6.3); ctx.fill(); stroke2(2,O); ctx.stroke();
+    ctx.fillStyle='#5fb8e0'; ctx.beginPath(); ctx.moveTo(13,j); ctx.lineTo(26,j-7); ctx.lineTo(26,j+7); ctx.closePath(); ctx.fill(); stroke2(2,O); ctx.stroke();
+    ctx.fillStyle=O; ctx.beginPath(); ctx.arc(-8,j-2,2.3,0,6.3); ctx.fill();
+  } else if(f.draw==='elec'){
+    ctx.fillStyle='#4a6b85'; rr(-13,-10,26,20,4); ctx.fill(); stroke2(2,O); ctx.stroke();
+    ctx.fillStyle='#ffd23f';
+    ctx.beginPath(); ctx.moveTo(-2,-7); ctx.lineTo(5,-7); ctx.lineTo(2,-1); ctx.lineTo(7,-1); ctx.lineTo(-3,8); ctx.lineTo(-1,1); ctx.lineTo(-6,1); ctx.closePath(); ctx.fill();
+  } else if(f.draw==='core'){
+    const s=1+Math.sin(G.t*4+f.ph)*0.12;
+    ctx.save(); ctx.rotate(G.t*0.8); ctx.scale(s,s);
+    ctx.fillStyle='#b9a6ff'; ctx.beginPath(); ctx.moveTo(0,-16); ctx.lineTo(12,0); ctx.lineTo(0,16); ctx.lineTo(-12,0); ctx.closePath(); ctx.fill();
+    stroke2(2.4,'#5a3fa8'); ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.moveTo(0,-8); ctx.lineTo(6,0); ctx.lineTo(0,8); ctx.lineTo(-6,0); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    ctx.save(); ctx.globalAlpha=.35; ctx.fillStyle='#b9a6ff'; ctx.beginPath(); ctx.arc(0,0,20,0,6.3); ctx.fill(); ctx.restore();
+  }
+  ctx.restore();
+}
+function drawReach(){
+  const y=SEA+3, x0=baseX()-G.reach, x1=baseX()+G.reach;
+  ctx.save();
+  ctx.globalAlpha=0.13+Math.sin(G.t*2)*0.035;
+  ctx.fillStyle='#ffd23f'; ctx.fillRect(x0,y-4,G.reach*2,7);
+  ctx.globalAlpha=0.45; ctx.fillRect(x0,y-9,3,17); ctx.fillRect(x1-3,y-9,3,17);
+  ctx.restore();
+}
+function drawBeast(b){
+  const y=b.y+Math.sin(G.t*2.1+b.ph)*4;
+  ctx.save(); ctx.translate(b.x,y); if(b.dir<0) ctx.scale(-1,1);
+  const hurt=b.hurt>0;
+  ctx.save(); ctx.globalAlpha=.18; ctx.fillStyle='#01121e';
+  ctx.beginPath(); ctx.ellipse(0,26,44,10,0,0,6.3); ctx.fill(); ctx.restore();
+  const O='#06203a';
+  if(b.type==='shark'){
+    const body=hurt?'#ffb3b3':'#7a9ab2';
+    ctx.fillStyle=body;
+    ctx.beginPath(); ctx.ellipse(0,0,42,16,0,0,6.3); ctx.fill(); stroke2(2.4,O); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-36,0); ctx.lineTo(-58,-17); ctx.lineTo(-52,0); ctx.lineTo(-58,17); ctx.closePath(); ctx.fill(); stroke2(2.4,O); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(4,-13); ctx.lineTo(11,-36); ctx.lineTo(23,-12); ctx.closePath(); ctx.fill(); stroke2(2.4,O); ctx.stroke();
+    ctx.fillStyle=hurt?'#fff':'#eef6fb';
+    ctx.beginPath(); ctx.moveTo(29,-3); ctx.lineTo(42,1); ctx.lineTo(29,8); ctx.closePath(); ctx.fill(); stroke2(2,O); ctx.stroke();
+    ctx.fillStyle=O; ctx.beginPath(); ctx.arc(25,-5,2.8,0,6.3); ctx.fill();
+    ctx.strokeStyle=hurt?'#fff':'#4a6b85'; ctx.lineWidth=2.2;
+    ctx.beginPath(); ctx.moveTo(4,-12); ctx.lineTo(23,-10); ctx.stroke();
+  } else if(b.type==='croco'){
+    const body=hurt?'#ffb3b3':'#6f8f5e';
+    ctx.fillStyle=body; rr(-40,-9,76,19,7); ctx.fill(); stroke2(2.4,O); ctx.stroke();
+    ctx.fillStyle=body; ctx.beginPath(); ctx.moveTo(34,-8); ctx.lineTo(56,-2); ctx.lineTo(34,6); ctx.closePath(); ctx.fill(); stroke2(2.4,O); ctx.stroke();
+    ctx.fillStyle='#eef6fb';
+    for(let i=0;i<5;i++){ ctx.beginPath(); ctx.moveTo(38+i*4,-2); ctx.lineTo(41+i*4,4); ctx.lineTo(44+i*4,-2); ctx.closePath(); ctx.fill(); }
+    ctx.fillStyle='#4a6b3a';
+    for(let i=0;i<5;i++){ ctx.beginPath(); ctx.moveTo(-32+i*15,-10); ctx.lineTo(-27+i*15,-19); ctx.lineTo(-22+i*15,-10); ctx.closePath(); ctx.fill(); }
+    ctx.fillStyle='#ffd23f'; ctx.beginPath(); ctx.arc(24,-7,4,0,6.3); ctx.fill();
+    ctx.fillStyle=O; ctx.beginPath(); ctx.arc(24,-7,1.8,0,6.3); ctx.fill();
+  } else { // fishman
+    const body=hurt?'#ffc2c2':'#7fa8b8';
+    ctx.fillStyle='#5d7f8f';
+    for(let i=0;i<6;i++){
+      const a=-1.3+i*0.52+Math.sin(G.t*3+i)*0.15;
+      ctx.save(); ctx.translate(0,-6); ctx.rotate(a*0.4);
+      ctx.strokeStyle=body; ctx.lineWidth=6; ctx.lineCap='round';
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.quadraticCurveTo(20,10,40,4); ctx.stroke(); ctx.restore();
+    }
+    ctx.fillStyle=body; ctx.beginPath(); ctx.ellipse(0,-8,26,30,0,0,6.3); ctx.fill(); stroke2(2.6,O); ctx.stroke();
+    ctx.fillStyle='#b9a6ff'; ctx.beginPath(); ctx.ellipse(0,-30,20,10,0,0,6.3); ctx.fill(); stroke2(2.2,O); ctx.stroke();
+    ctx.fillStyle='#ffd23f'; ctx.beginPath(); ctx.arc(-9,-14,5.5,0,6.3); ctx.fill(); ctx.beginPath(); ctx.arc(9,-14,5.5,0,6.3); ctx.fill();
+    ctx.fillStyle=O; ctx.beginPath(); ctx.arc(-9,-14,2.4,0,6.3); ctx.fill(); ctx.beginPath(); ctx.arc(9,-14,2.4,0,6.3); ctx.fill();
+  }
+  if(!b.boss&&b.hp<b.hpmax){
+    ctx.fillStyle='rgba(0,0,0,.5)'; rr(-27,-48,54,7,3); ctx.fill();
+    ctx.fillStyle='#ff5d5d'; rr(-26,-47,52*(b.hp/b.hpmax),5,2); ctx.fill();
+  }
+  ctx.restore();
+}
+function drawBoss(b){
+  ctx.save(); ctx.translate(b.x,b.y);
+  const h=b.hurt>0;
+  if(b.kind==='chen'){
+    // 旗舰
+    ctx.save(); ctx.globalAlpha=.22; ctx.fillStyle='#01121e';
+    ctx.beginPath(); ctx.ellipse(0,40,150,20,0,0,6.3); ctx.fill(); ctx.restore();
+    const bob=Math.sin(b.t*1.2)*4;
+    ctx.translate(0,bob);
+    // 船体
+    ctx.fillStyle=h?'#ff9d9d':'#2b3a4d';
+    ctx.beginPath(); ctx.moveTo(-140,-10); ctx.lineTo(140,-10); ctx.lineTo(112,34); ctx.lineTo(-112,34); ctx.closePath(); ctx.fill();
+    stroke2(3,'#06203a'); ctx.stroke();
+    ctx.fillStyle='#7c4dff'; ctx.fillRect(-140,-16,280,8); stroke2(2.4,'#06203a'); ctx.strokeRect(-140,-16,280,8);
+    // 上层建筑
+    ctx.fillStyle=h?'#ffd6d6':'#3d5170'; ctx.fillRect(-64,-58,128,48); stroke2(2.8,'#06203a'); ctx.strokeRect(-64,-58,128,48);
+    ctx.fillStyle='#8fd6f5';
+    for(let i=0;i<4;i++){ ctx.fillRect(-52+i*28,-48,18,16); stroke2(1.8,'#06203a'); ctx.strokeRect(-52+i*28,-48,18,16); }
+    // 塔
+    ctx.fillStyle='#5d6d77'; ctx.fillRect(-16,-96,32,40); stroke2(2.6,'#06203a'); ctx.strokeRect(-16,-96,32,40);
+    ctx.fillStyle='#7c4dff'; ctx.beginPath(); ctx.arc(0,-104,11,0,6.3); ctx.fill(); stroke2(2.4,'#06203a'); ctx.stroke();
+    // 旗
+    ctx.fillStyle='#7c4dff'; ctx.fillRect(-2,-140,4,44);
+    ctx.beginPath(); ctx.moveTo(2,-140); ctx.lineTo(52,-126); ctx.lineTo(2,-112); ctx.closePath(); ctx.fill(); stroke2(2,'#06203a'); ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.font='900 12px system-ui'; ctx.textAlign='center'; ctx.fillText('水',26,-124); ctx.textBaseline='middle';
+    // 炮
+    ctx.fillStyle='#8a5a2b'; ctx.fillRect(-120,-30,40,14); stroke2(2.4,'#06203a'); ctx.strokeRect(-120,-30,40,14);
+    ctx.fillStyle='#ffd23f'; ctx.beginPath(); ctx.arc(-120,-23,9,0,6.3); ctx.fill(); stroke2(2.2,'#b96a00'); ctx.stroke();
+    // 陈浩剪影
+    ctx.save(); ctx.translate(0,-70); ctx.scale(1.1,1.1);
+    drawMan(0,0,1,'#f2c49b','#7c4dff','#1a1024','angry','',0,0,1); ctx.restore();
+  } else {
+    // 深海巨兽
+    ctx.save(); ctx.globalAlpha=.2; ctx.fillStyle='#01121e';
+    ctx.beginPath(); ctx.ellipse(0,60,130,26,0,0,6.3); ctx.fill(); ctx.restore();
+    const body=h?'#ffb3b3':'#6b4a9e';
+    // 触手
+    ctx.strokeStyle=body; ctx.lineWidth=13; ctx.lineCap='round';
+    for(let i=0;i<7;i++){
+      const a=-1.45+i*0.48+Math.sin(b.t*2+i)*0.2;
+      ctx.beginPath(); ctx.moveTo(Math.cos(a)*40,10);
+      ctx.quadraticCurveTo(Math.cos(a)*130,50+Math.sin(b.t*2+i)*22, Math.cos(a)*180,96+Math.sin(b.t*2.4+i)*30);
+      ctx.stroke();
+    }
+    // 头
+    ctx.fillStyle=body; ctx.beginPath(); ctx.ellipse(0,0,86,58,0,0,6.3); ctx.fill(); stroke2(3.4,'#06203a'); ctx.stroke();
+    ctx.fillStyle=h?'#fff':'#b9a6ff'; ctx.beginPath(); ctx.ellipse(-30,-14,20,24,0,0,6.3); ctx.fill(); ctx.beginPath(); ctx.ellipse(30,-14,20,24,0,0,6.3); ctx.fill();
+    ctx.fillStyle='#ffd23f'; ctx.beginPath(); ctx.arc(-30,-14,10,0,6.3); ctx.fill(); ctx.beginPath(); ctx.arc(30,-14,10,0,6.3); ctx.fill();
+    ctx.fillStyle='#06203a'; ctx.beginPath(); ctx.arc(-30,-14,4.6,0,6.3); ctx.fill(); ctx.beginPath(); ctx.arc(30,-14,4.6,0,6.3); ctx.fill();
+    ctx.strokeStyle='#06203a'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(0,16,26,0.25,Math.PI-0.25); ctx.stroke();
+    ctx.fillStyle='#fff';
+    for(let i=0;i<5;i++){ const fx=-20+i*10; ctx.beginPath(); ctx.moveTo(fx,20); ctx.lineTo(fx+4,30); ctx.lineTo(fx+8,20); ctx.closePath(); ctx.fill(); }
+  }
+  ctx.restore();
+}
+function drawSurvivors(){
+  G.survivors.forEach(s=>{
+    const y=s.y+Math.sin(G.t*2.5+s.x*0.02)*3;
+    ctx.save(); ctx.translate(s.x,y);
+    ctx.fillStyle='#ad7640'; rr(-22,0,44,9,3); ctx.fill(); stroke2(2,'#6d4520'); ctx.stroke();
+    ctx.save(); ctx.globalAlpha=.2; ctx.fillStyle='#012233'; ctx.beginPath(); ctx.ellipse(0,11,26,5,0,0,6.3); ctx.fill(); ctx.restore();
+    drawMan(0,-2,0.92,'#f2c49b',['#cfe9f8','#ffd6a5','#c8f0c0','#e8c8f0'][s.hue],s.hue===0?'#3b2a1a':null,'sad','',0,0,s.dir>0?1:-1);
+    // 求救
+    const a=0.5+Math.sin(G.t*5)*0.25;
+    ctx.save(); ctx.globalAlpha=a;
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(17,-32,13,0,6.3); ctx.fill(); stroke2(2,'#06203a'); ctx.stroke();
+    ctx.fillStyle='#ff6b35'; ctx.font='900 16px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('!',17,-31);
+    ctx.restore();
+    ctx.save(); ctx.font='900 11px system-ui'; ctx.textAlign='center'; ctx.fillStyle='#fff';
+    ctx.strokeStyle='rgba(4,22,42,.9)'; ctx.lineWidth=3; ctx.strokeText(s.job.i,s.x,y-56); ctx.fillText(s.job.i,s.x,y-56); ctx.restore();
+    ctx.restore();
+  });
+}
+function drawBoats(){
+  G.boats.forEach(b=>{
+    ctx.save(); ctx.translate(b.x,b.y); if(b.dir<0) ctx.scale(-1,1);
+    const bob=Math.sin(G.t*1.6)*3;
+    ctx.translate(0,bob);
+    ctx.fillStyle='#8a5a2b'; ctx.beginPath(); ctx.moveTo(-52,-6); ctx.lineTo(52,-6); ctx.lineTo(40,16); ctx.lineTo(-40,16); ctx.closePath(); ctx.fill();
+    stroke2(2.6,'#06203a'); ctx.stroke();
+    ctx.fillStyle=b.f.c; ctx.fillRect(-52,-11,104,6); stroke2(2,'#06203a'); ctx.strokeRect(-52,-11,104,6);
+    // 桅杆+旗
+    ctx.fillStyle='#6d4520'; ctx.fillRect(-3,-64,6,54);
+    ctx.fillStyle=b.f.c; ctx.beginPath(); ctx.moveTo(3,-64); ctx.lineTo(42,-52); ctx.lineTo(3,-40); ctx.closePath(); ctx.fill(); stroke2(2,'#06203a'); ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.font='900 13px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(b.f.i,22,-52);
+    // 船老大
+    drawMan(-14,-8,0.85,'#f2c49b',b.f.c,null,'happy','',0,0,1);
+    ctx.restore();
+  });
+}
+function drawDive(){
+  const d=G.dive; if(!d) return;
+  ctx.save();
+  // 水下
+  ctx.fillStyle='rgba(4,32,64,.72)'; ctx.fillRect(-200,SEA-200,W+400,H-SEA+260);
+  const g=ctx.createLinearGradient(0,SEA,0,H);
+  g.addColorStop(0,'rgba(60,160,220,.35)'); g.addColorStop(1,'rgba(2,20,44,.9)');
+  ctx.fillStyle=g; ctx.fillRect(-200,SEA,W+400,H-SEA+40);
+  // 光柱
+  ctx.save(); ctx.globalAlpha=.22;
+  const lg=ctx.createLinearGradient(0,SEA-100,0,H);
+  lg.addColorStop(0,'rgba(190,240,255,.8)'); lg.addColorStop(1,'rgba(190,240,255,0)');
+  ctx.fillStyle=lg;
+  for(let i=0;i<4;i++){
+    const cx=((i*311+G.t*14)%(W+300))-150;
+    ctx.beginPath(); ctx.moveTo(cx-30,SEA-100); ctx.lineTo(cx+30,SEA-100); ctx.lineTo(cx+90,H); ctx.lineTo(cx-90,H); ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+  // 气泡
+  if(chance(0.4)) FX.part(rnd(0,W),H-10,1,'rgba(200,240,255,.8)',30,1.6);
+  // 沉船残骸背景
+  ctx.save(); ctx.globalAlpha=.35; ctx.fillStyle='#03203a';
+  ctx.beginPath(); ctx.moveTo(W*0.12,H-30); ctx.lineTo(W*0.3,H-70); ctx.lineTo(W*0.44,H-24); ctx.closePath(); ctx.fill();
+  ctx.restore();
+  // 宝箱
+  d.chests.forEach(c=>{
+    ctx.save(); ctx.translate(c.x,c.y+Math.sin(G.t*1.6+c.x*0.01)*4);
+    if(c.open){
+      ctx.globalAlpha=.4;
+      ctx.fillStyle='#8a5a2b'; rr(-20,-14,40,28,4); ctx.fill();
+    } else {
+      ctx.fillStyle='#8a5a2b'; rr(-20,-14,40,28,4); ctx.fill(); stroke2(2.6,'#06203a'); ctx.stroke();
+      ctx.fillStyle='#c89a5b'; ctx.fillRect(-20,-14,40,7);
+      ctx.fillStyle='#ffd23f'; rr(-5,-4,10,12,2); ctx.fill(); stroke2(2,'#b96a00'); ctx.stroke();
+      ctx.save(); ctx.globalAlpha=.3+Math.sin(G.t*5)*.18; ctx.fillStyle='#ffd23f';
+      ctx.beginPath(); ctx.arc(0,-2,26,0,6.3); ctx.fill(); ctx.restore();
+    }
+    ctx.restore();
+  });
+  ctx.restore();
+}
+function drawDiveSpot(){
+  const d=G.diveSpot; if(!d) return;
+  ctx.save(); ctx.translate(d.x,d.y);
+  const a=0.5+Math.sin(G.t*3)*0.2;
+  ctx.globalAlpha=a*0.55;
+  ctx.strokeStyle='#b9a6ff'; ctx.lineWidth=4;
+  for(let i=0;i<3;i++){
+    const r=d.r-i*11, ph=G.t*1.6+i;
+    ctx.beginPath(); ctx.ellipse(0,0,r,r*0.42,ph,0,6.3); ctx.stroke();
+  }
+  ctx.globalAlpha=a; ctx.fillStyle='#7c4dff';
+  ctx.beginPath(); ctx.ellipse(0,0,d.r*0.5,d.r*0.22,0,0,6.3); ctx.fill();
+  ctx.globalAlpha=1; ctx.fillStyle='#fff'; ctx.font='900 13px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.strokeStyle='rgba(4,22,42,.9)'; ctx.lineWidth=3.4;
+  ctx.strokeText('🌀 下潜',0,-d.r-14); ctx.fillText('🌀 下潜',0,-d.r-14);
+  ctx.restore();
+}
+function drawWeather(){
+  const st=G.storm;
+  if(st.warn>0&&!st.on){
+    ctx.save(); ctx.globalAlpha=0.14+Math.sin(G.t*9)*0.09;
+    ctx.fillStyle='#ff4d4d'; ctx.fillRect(-200,-200,W+400,H+400); ctx.restore();
+  }
+  if(st.on){
+    ctx.save(); ctx.strokeStyle='rgba(200,232,255,.5)'; ctx.lineWidth=1.7;
+    for(let i=0;i<150;i++){
+      const x=((i*97+G.t*380)%(W+200))-100, y=((i*53+G.t*900)%(H+80))-40;
+      ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x-8,y+26); ctx.stroke();
+    }
+    ctx.restore();
+    if(chance(0.007)){
+      ctx.save(); ctx.globalAlpha=0.42; ctx.fillStyle='#fff'; ctx.fillRect(-200,-200,W+400,H+400); ctx.restore();
+      Snd.noise(0.3,0.1,2000);
+    }
+    // 黑潮紫雾
+    ctx.save(); ctx.globalAlpha=.2; ctx.fillStyle='#4a1a6b'; ctx.fillRect(-200,SEA-60,W+400,H); ctx.restore();
+    ctx.save(); ctx.globalAlpha=.13; ctx.fillStyle='#00121f'; ctx.fillRect(-200,-200,W+400,H+400); ctx.restore();
+  }
+}
+function drawBullets(){
+  G.bullets.forEach(b=>{
+    if(b.cx===undefined) return;
+    ctx.save();
+    ctx.fillStyle=b.hostile?'#ff6b35':'#ffd23f';
+    ctx.beginPath(); ctx.arc(b.cx,b.cy,b.hostile?7:5.5,0,6.3); ctx.fill();
+    ctx.globalAlpha=.4; ctx.beginPath(); ctx.arc(b.cx,b.cy,b.hostile?13:10,0,6.3); ctx.fill();
+    ctx.restore();
+  });
+}
+//=====================================================================
+//  主绘制
+//=====================================================================
+let DPR=1;
+function draw(dt){
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.fillStyle='#04162a'; ctx.fillRect(0,0,W,H);
+  ctx.save();
+  const cm=G.cam;
+  ctx.translate(W/2,H/2);
+  ctx.scale(cm.z,cm.z);
+  ctx.translate(-W/2+cm.x,-H/2+cm.y);
+  if(G.shake>0.2) ctx.translate(rnd(-G.shake,G.shake)*0.42, rnd(-G.shake,G.shake)*0.42);
+
+  drawSky();
+  drawCity();
+  drawSea();
+  drawReach();
+
+  if(!G.dive){
+    G.floaters.forEach(f=>{ if(f.y<SEA+40) drawFloater(f); });
+    drawDeck();
+    drawToilet();
+    drawModules();
+    drawPeople();
+    drawPlayer();
+    G.survivors.forEach(s=>{}); drawSurvivors();
+    G.boats.forEach(b=>{}); drawBoats();
+    drawDiveSpot();
+    G.beasts.forEach(b=>drawBeast(b));
+    if(G.boss) drawBoss(G.boss);
+    G.floaters.forEach(f=>{ if(f.y>=SEA+40) drawFloater(f); });
+  } else {
+    drawDive();
+    // 潜水员（阿水）
+    drawMan(baseX()+G.player.x, H*0.42, 1.15,'#f2c49b','#2ec4b6','#3b2a1a','happy',G.player.act,G.player.actT,0,1);
+  }
+
+  drawBullets();
+
+  // 前浪
+  const ph=G.t*1.65;
+  wave(SEA+150,20*(G.storm.on?2:1),72,ph+2.2,'rgba(4,34,58,.94)',1);
+  wave(SEA+216,26*(G.storm.on?2.2:1),58,ph*1.2+4.4,'rgba(2,20,38,.96)',1);
+
+  // 粒子
+  ctx.save();
+  G.parts.forEach(p=>{
+    const a=1-p.t/p.life;
+    ctx.globalAlpha=Math.max(0,a); ctx.fillStyle=p.c;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r*a+0.6,0,6.3); ctx.fill();
+  });
+  ctx.restore();
+  // 飘字
+  ctx.save(); ctx.textAlign='center'; ctx.textBaseline='middle';
+  G.texts.forEach(t=>{
+    const a=1-t.t/t.life;
+    ctx.globalAlpha=Math.max(0,Math.min(1,a*1.7));
+    ctx.font='900 '+t.s+'px system-ui,sans-serif';
+    ctx.lineWidth=3.6; ctx.strokeStyle='rgba(3,16,30,.9)';
+    ctx.strokeText(t.txt,t.x,t.y); ctx.fillStyle=t.color; ctx.fillText(t.txt,t.x,t.y);
+  });
+  ctx.restore();
+
+  drawWeather();
+  ctx.restore();
+
+  // 后期
+  const vg=ctx.createRadialGradient(W/2,H/2,H*0.44,W/2,H/2,H*1.0);
+  vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,10,22,.5)');
+  ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
+  if(G.flash>0){
+    ctx.save(); ctx.globalAlpha=Math.min(0.55,G.flash*0.55);
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H); ctx.restore();
+  }
+  // 低血量红边
+  if(G.hp/G.hpmax<0.3){
+    const a=(0.3-G.hp/G.hpmax)/0.3*0.4*(0.6+Math.sin(G.t*6)*0.4);
+    const rg=ctx.createRadialGradient(W/2,H/2,H*0.36,W/2,H/2,H*0.9);
+    rg.addColorStop(0,'rgba(255,0,0,0)'); rg.addColorStop(1,'rgba(255,20,20,'+a.toFixed(3)+')');
+    ctx.fillStyle=rg; ctx.fillRect(0,0,W,H);
+  }
+}
+
+//=====================================================================
+//  UI
+//=====================================================================
+const AV={
+  fq:    {s:'#f2c49b',h:'bald', c:'#f7f3ea',bg:'#ffe9b8',acc:'none'},
+  ashui: {s:'#f2c49b',h:'#2b1b12',c:'#2ec4b6', bg:'#cfe9f8',acc:'none'},
+  chen:  {s:'#e8c9a8',h:'#1a1024',c:'#7c4dff', bg:'#2b1e4d',acc:'none'},
+  insp:  {s:'#f2c49b',h:'#4a3a2a',c:'#3b6ea5', bg:'#dfe9f0',acc:'glass'},
+  nb:    {s:'#e8c9a8',h:'#5a4632',c:'#8d6e63', bg:'#e8dcc8',acc:'none'},
+  chi:   {s:'#f7d9bd',h:'#3b2a1a',c:'#ff6b35', bg:'#ffd6a5',acc:'none'},
+  mia:   {s:'#f7d9bd',h:'#d98cb3',c:'#7fe3d8', bg:'#e8c8f0',acc:'none'},
+  bald:  {s:'#e8c9a8',h:'bald',   c:'#c9d6dd', bg:'#dfe9f0',acc:'none'},
+  prof:  {s:'#e8c9a8',h:'#c9c9c9',c:'#eef2f5', bg:'#16324f',acc:'glass'}
+};
+function ava(kind){
+  const a=AV[kind]||AV.fq;
+  let hair='';
+  if(a.h==='bald'){ hair='<path d="M28 44a22 22 0 0 1 44 0" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="4"/>'; }
+  else { hair=`<path d="M26 46a24 24 0 0 1 48 0 v-4a24 24 0 0 0-48 0z" fill="${a.h}"/><ellipse cx="50" cy="40" rx="26" ry="20" fill="${a.h}"/>`; }
+  const glass = a.acc==='glass' ? '<circle cx="39" cy="53" r="9" fill="none" stroke="#06203a" stroke-width="2.4"/><circle cx="61" cy="53" r="9" fill="none" stroke="#06203a" stroke-width="2.4"/><path d="M48 53h4" stroke="#06203a" stroke-width="2.4"/>' : '';
+  return `<svg viewBox="0 0 100 100"><rect width="100" height="100" fill="${a.bg}"/>`
+    +`<ellipse cx="50" cy="96" rx="34" ry="18" fill="${a.c}"/>`
+    +`<rect x="24" y="72" width="52" height="26" rx="10" fill="${a.c}" stroke="#06203a" stroke-width="2.5"/>`
+    +`<circle cx="50" cy="52" r="24" fill="${a.s}" stroke="#06203a" stroke-width="2.6"/>`
+    +hair
+    +`<circle cx="41" cy="52" r="3" fill="#2b1b12"/><circle cx="59" cy="52" r="3" fill="#2b1b12"/>`
+    +`<path d="M42 63q8 6 16 0" stroke="#2b1b12" stroke-width="2.4" fill="none" stroke-linecap="round"/>`
+    +glass+`</svg>`;
+}
+const MODSVG={
+  urine:'<rect x="14" y="24" width="20" height="22" rx="4" fill="#c9b78c" stroke="#06203a" stroke-width="2"/><circle cx="24" cy="14" r="7" fill="#ffd23f" stroke="#06203a" stroke-width="2"/>',
+  filter:'<rect x="12" y="10" width="24" height="12" rx="2" fill="#2ec4b6"/><ellipse cx="24" cy="30" rx="14" ry="13" fill="#7fe3d8" stroke="#1b8f86" stroke-width="2.4"/><circle cx="24" cy="28" r="3.6" fill="#06203a"/>',
+  filterP:'<rect x="12" y="10" width="24" height="12" rx="2" fill="#ffd23f"/><ellipse cx="24" cy="30" rx="14" ry="13" fill="#ffe9a8" stroke="#b96a00" stroke-width="2.4"/><circle cx="24" cy="28" r="3.6" fill="#06203a"/>',
+  tide:'<rect x="12" y="8" width="24" height="12" rx="2" fill="#ffd23f"/><ellipse cx="24" cy="28" rx="14" ry="13" fill="#7fe3d8" stroke="#1b8f86" stroke-width="2.4"/><circle cx="24" cy="12" r="4" fill="#b9a6ff" stroke="#06203a" stroke-width="2"/>',
+  solar:'<path d="M24 34v10" stroke="#8fa3ad" stroke-width="3.4"/><g transform="rotate(-14 24 22)"><rect x="6" y="12" width="36" height="19" fill="#3b6ea5"/><path d="M6 20h36M14 12v19M30 12v19" stroke="#8fd6f5" stroke-width="2"/></g>',
+  eel:'<rect x="8" y="14" width="32" height="24" rx="8" fill="#4a7f5e" stroke="#06203a" stroke-width="2"/><path d="M12 22l24 10-24 4z" fill="#ffd23f"/>',
+  nuke:'<rect x="8" y="14" width="32" height="24" rx="6" fill="#5d6d77" stroke="#06203a" stroke-width="2"/><circle cx="24" cy="26" r="9" fill="#7c4dff" stroke="#06203a" stroke-width="2"/>',
+  vent:'<rect x="14" y="14" width="20" height="24" rx="4" fill="#c9d6dd" stroke="#06203a" stroke-width="2"/><path d="M17 20h14M17 26h14M17 32h14" stroke="#8fa3ad" stroke-width="2.4"/>',
+  puffer:'<circle cx="24" cy="26" r="15" fill="#ffd23f" stroke="#06203a" stroke-width="2.4"/><circle cx="19" cy="23" r="2.4" fill="#06203a"/><circle cx="29" cy="23" r="2.4" fill="#06203a"/><circle cx="18" cy="12" r="3" fill="#8fd6f5"/><circle cx="30" cy="8" r="2.4" fill="#8fd6f5"/>',
+  fisher:'<rect x="12" y="20" width="22" height="15" fill="#c89a5b" stroke="#8a5a2b" stroke-width="2"/><path d="M30 20L40 6" stroke="#e0c893" stroke-width="2.6"/><ellipse cx="40" cy="24" rx="5" ry="3.4" fill="#8fd6f5"/>',
+  farm:'<rect x="8" y="28" width="32" height="10" fill="#8a5a2b"/><ellipse cx="16" cy="20" rx="6" ry="10" fill="#4caf50"/><ellipse cx="28" cy="18" rx="6" ry="11" fill="#66bb6a"/><circle cx="32" cy="12" r="3" fill="#ff6b35"/>',
+  gps:'<rect x="12" y="12" width="24" height="22" rx="5" fill="#3b6ea5" stroke="#06203a" stroke-width="2"/><circle cx="24" cy="23" r="7" fill="#8fd6f5"/><path d="M24 23l5-6" stroke="#ffd23f" stroke-width="2.6"/>',
+  light:'<path d="M16 40h16l-3-24h-10z" fill="#efe9dc" stroke="#06203a" stroke-width="2.4"/><rect x="15" y="26" width="18" height="4" fill="#ff6b35"/><circle cx="24" cy="8" r="6" fill="#ffd23f" stroke="#06203a" stroke-width="2"/>',
+  emp:'<rect x="10" y="14" width="28" height="24" rx="5" fill="#5d6d77" stroke="#06203a" stroke-width="2"/><path d="M18 26a6 6 0 0 1 12 0M14 26a10 10 0 0 1 20 0" stroke="#b9a6ff" stroke-width="2.4" fill="none"/>',
+  spike:'<path d="M24 8l6 30H18z" fill="#dfe9ef" stroke="#8fa3ad" stroke-width="2"/><path d="M10 8l5 30H5z" fill="#dfe9ef" stroke="#8fa3ad" stroke-width="2"/><path d="M38 8l5 30H33z" fill="#dfe9ef" stroke="#8fa3ad" stroke-width="2"/><rect x="4" y="38" width="40" height="6" fill="#a9743c"/>',
+  cannon:'<rect x="13" y="28" width="22" height="12" fill="#8a5a2b"/><circle cx="24" cy="22" r="11" fill="#ffd23f" stroke="#b96a00" stroke-width="2.4"/><rect x="30" y="17" width="14" height="10" fill="#ffd23f" stroke="#b96a00" stroke-width="2"/>',
+  laser:'<rect x="13" y="28" width="22" height="12" fill="#8a5a2b"/><rect x="13" y="10" width="22" height="20" rx="4" fill="#7c4dff" stroke="#06203a" stroke-width="2.4"/><circle cx="24" cy="20" r="5" fill="#fff6d0"/>',
+  biggun:'<rect x="10" y="28" width="28" height="12" fill="#8a5a2b"/><rect x="12" y="12" width="24" height="18" rx="4" fill="#ff6b35" stroke="#06203a" stroke-width="2.4"/><rect x="30" y="16" width="16" height="10" fill="#ff6b35" stroke="#06203a" stroke-width="2"/>',
+  toilet:'<rect x="12" y="14" width="24" height="24" rx="3" fill="#efe9dc" stroke="#06203a" stroke-width="2.4"/><path d="M10 14l14-8 14 8z" fill="#c9d6dd" stroke="#06203a" stroke-width="2.4"/><rect x="19" y="24" width="10" height="14" fill="#c3b8a4"/>',
+  goldtoilet:'<rect x="12" y="14" width="24" height="24" rx="3" fill="#ffe9a8" stroke="#b96a00" stroke-width="2.4"/><path d="M10 14l14-8 14 8z" fill="#ffd23f" stroke="#b96a00" stroke-width="2.4"/><rect x="19" y="24" width="10" height="14" fill="#e0b354"/>',
+  bed:'<rect x="8" y="26" width="32" height="11" fill="#8a5a2b" stroke="#5d6d77" stroke-width="2"/><rect x="8" y="18" width="32" height="8" fill="#efe9dc"/><rect x="8" y="12" width="14" height="6" fill="#c9d6dd"/>',
+  bunk:'<rect x="8" y="26" width="32" height="11" fill="#8a5a2b" stroke="#5d6d77" stroke-width="2"/><rect x="8" y="18" width="32" height="8" fill="#efe9dc"/><rect x="8" y="10" width="32" height="8" fill="#efe9dc"/><rect x="8" y="4" width="14" height="6" fill="#c9d6dd"/>',
+  cabin:'<rect x="8" y="14" width="32" height="24" rx="4" fill="#c9d6dd" stroke="#5d6d77" stroke-width="2.4"/><rect x="13" y="20" width="9" height="10" fill="#8fd6f5"/><rect x="26" y="20" width="9" height="10" fill="#8fd6f5"/>',
+  wall:'<rect x="8" y="12" width="32" height="26" fill="#c9d6dd" stroke="#5d6d77" stroke-width="2.6"/><rect x="8" y="12" width="32" height="5" fill="#93a3ad"/><path d="M24 12v26" stroke="#93a3ad" stroke-width="2"/>',
+  armor:'<rect x="8" y="12" width="32" height="26" rx="5" fill="#8fa3ad" stroke="#06203a" stroke-width="2.6"/><rect x="12" y="17" width="24" height="4" fill="#c9d6dd"/><rect x="12" y="24" width="24" height="4" fill="#c9d6dd"/>',
+  shield:'<ellipse cx="24" cy="26" rx="16" ry="20" fill="none" stroke="#80d8ff" stroke-width="3"/><circle cx="24" cy="26" r="7" fill="#2979ff" stroke="#06203a" stroke-width="2"/>'
+};
+
+const UI={
+  busy(){ return $('story').classList.contains('show')||$('choice').classList.contains('show')||$('modal').classList.contains('show')||$('wipe').classList.contains('show'); },
+  toast(msg,kind){
+    const box=$('toast'), d=document.createElement('div');
+    d.className='tst'+(kind?' '+kind:''); d.textContent=msg; box.appendChild(d);
+    if(box.children.length>4) box.firstChild.remove();
+    setTimeout(()=>{ d.style.transition='opacity .4s,transform .4s'; d.style.opacity='0'; d.style.transform='translateY(-8px)';
+      setTimeout(()=>d.remove(),420); },2000);
+  },
+  sub(t){
+    const el=$('sub');
+    if(!t){ el.classList.remove('show'); return; }
+    el.innerHTML=t; el.classList.add('show');
+  },
+  bump(k){
+    const el=document.querySelector('.rc[data-k="'+k+'"]');
+    if(!el) return;
+    el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
+  },
+  danmu(){
+    const lines=['一天能看到八万种疯狂水世界的AI广告','开局一定要选海水过滤器！','这游戏我至少看过20种广告','愣是一秒实机演示都没有','三分钟一局 巨爽巨解压','肥强加油！！','我这就去打捞海水过滤器','搬去更好的庇护所','疯狂水世界！启动！','广告比游戏好看系列','我都不玩游戏，天天看他们广告','这次他捞到了吗？','海水过滤器已经过时了','现在最牛的是电鳗发电机','河豚制氧仪 yyds','拼好房预定','这避难所还不如我的厕所','OK……OK……OK'];
+    const box=$('danmu'); if(box.children.length>7) return;
+    const d=document.createElement('div');
+    const hot=chance(0.14), gold=chance(0.14);
+    d.className='dm'+(hot?' hot':(gold?' gold':''));
+    d.textContent=pick(lines);
+    d.style.top=(rnd(0,150))+'px';
+    d.style.animationDuration=rnd(7,12)+'s';
+    box.appendChild(d);
+    setTimeout(()=>d.remove(),12500);
+  },
+  // ---- HUD
+  buildHUD(){
+    $('vitals').innerHTML=[
+      ['hp','耐久','🛡'],['wa','淡水','💧'],['fo','食物','🍖'],['pw','电力','⚡'],['ox','氧气','🫧']
+    ].map(v=>`<div class="vrow" id="vr-${v[0]}"><div class="vico">${v[2]}</div><div class="vname">${v[1]}</div>
+        <div class="vtrack"><div class="vfill f-${v[0]}"></div></div><div class="vval"></div></div>`).join('');
+    $('slots').innerHTML=SLOTS.map(s=>
+      `<div class="slot" data-s="${s.k}" title="${s.n}"><span style="font-size:15px;opacity:.5">${s.i}</span><div class="lbl">${s.n}</div></div>`).join('');
+    $('resbar').innerHTML=RES.map(r=>
+      `<div class="glass rc" data-k="${r.k}"><i>${r.i}</i><span style="color:${r.c}">0</span></div>`).join('');
+  },
+  tick(force){
+    if(!G) return;
+    UI._n=(UI._n||0)+1; if(!force && UI._n%3) return;
+    const set=(id,w,v)=>{ const e=$('vr-'+id); if(!e) return;
+      const f=e.querySelector('.vfill'), t=e.querySelector('.vval');
+      if(f) f.style.width=clamp(w,0,1)*100+'%';
+      if(t) t.textContent=v;
+      e.classList.toggle('low', w<0.25); };
+    set('hp',G.hp/G.hpmax,Math.ceil(G.hp)+'/'+Math.round(G.hpmax));
+    set('wa',G.water/CFG.waMax,Math.ceil(G.water)+'%');
+    set('fo',G.food/CFG.foMax,Math.ceil(G.food)+'%');
+    set('pw',G.power/Math.max(1,G.powmax),Math.ceil(G.power)+'/'+Math.round(G.powmax));
+    set('ox',G.oxy/CFG.oxMax,Math.ceil(G.oxy)+'%');
+    G.star=stars();
+    $('v-day').innerHTML='第 <em>'+Math.round(G.dayF)+'</em> 天';
+    $('v-star').textContent='★'.repeat(Math.min(5,Math.max(1,G.star))).padEnd(5,'☆');
+    UI.updateTut();
+    $('v-ppl').textContent=G.ppl.length;
+    $('v-gain').textContent=G.gain;
+    $('v-dist').textContent=Math.round(G.dist);
+    // 槽位
+    SLOTS.forEach(s=>{
+      const el=document.querySelector('.slot[data-s="'+s.k+'"]'); if(!el) return;
+      const id=G.slots[s.k];
+      el.classList.toggle('on',!!id);
+      el.classList.toggle('old',!!id&&isOld(id));
+      if(id) el.innerHTML='<svg viewBox="0 0 48 48">'+(MODSVG[id]||'')+'</svg><div class="lbl">'+s.n+'</div>';
+      else el.innerHTML='<span style="font-size:15px;opacity:.5">'+s.i+'</span><div class="lbl">'+s.n+'</div>';
+    });
+    // BOSS 血条
+    const bb=$('bossbar');
+    if(G.boss&&G.running){
+      bb.classList.add('show');
+      $('boss-n').textContent='⚔ '+G.boss.name;
+      $('boss-i').style.width=clamp(G.boss.hp/G.boss.hpmax,0,1)*100+'%';
+      $('boss-p').textContent=Math.max(0,Math.ceil(G.boss.hp))+' / '+Math.round(G.boss.hpmax)
+        +(G.boss.phase>=1?'　💢狂暴':'')+(G.boss.phase>=2?'　🔥濒死':'');
+    } else bb.classList.remove('show');
+    // 可建造
+    let can=0;
+    MODS.forEach(m=>{ if(!m.rep && G.slots[m.s]!==m.id && afford(m.cost) && (!MM[G.slots[m.s]]||MM[G.slots[m.s]].gen<m.gen)) can++; });
+    if(afford(DECK_COST(G.decks))) can++;
+    const dot=$('b-dot');
+    if(can>0){ dot.classList.remove('hidden'); dot.textContent=can; } else dot.classList.add('hidden');
+    RES.forEach(r=>{ const el=document.querySelector('.rc[data-k="'+r.k+'"] span'); if(el) el.textContent=G.res[r.k]|0; });
+  },
+  renderRes(){ UI.tick(); },
+  updateTut(){
+    const el=$('tut'); let t=null;
+    if(!G||!G.running){ el.classList.remove('show'); return; }
+    if(G.collected<8) t='👆 点击海面漂来的物资打捞，攒够 10 件进入第 9 天';
+    else if(!G.slots.water) t='🔧 右下角 <em>改装</em> → 淡水槽，先装 <em>海水过滤器</em>';
+    else if(!G.slots.energy) t='⚡ 电力见底了，能源槽装 <em>太阳能充电板</em>';
+    else if(G.pplCap<=G.ppl.length&&G.survivors.length) t='🧍 点击漂来的幸存者收留他（先造 <em>床铺</em>）';
+    else if(!G.flags.dove&&G.diveSpot) t='🌀 点击漩涡下潜，深海里有 <em>晶核</em>';
+    else if(G.beasts.length&&!G.slots.def) t='🦈 点击猛兽反击！防御槽装 <em>防护尖刺</em> 能反伤';
+    else if(G.storm.warn>0) t='🌪 黑潮要来了，<em>加固墙体</em>能大幅减伤';
+    el.innerHTML=t||''; el.classList.toggle('show', !!t && !UI.busy());
+  },
+  renderAll(){ UI.tick(); if($('sheet').classList.contains('show')) renderSheet(); },
+  // ---- 剧情
+  _sq:null,_si:0,_scb:null,_typing:false,
+  story(list,cb){
+    this._sq=list; this._si=0; this._scb=cb||null;
+    $('story').classList.add('show');
+    const sk=$('s-skip');
+    if(sk) sk.style.display = list.length>1 ? 'block' : 'none';
+    this._show();
+  },
+  skipStory(){
+    if(!this._sq) return;
+    clearInterval(this._ti); this._typing=false;
+    this._si=this._sq.length;
+    $('story').classList.remove('show');
+    const cb=this._scb; this._scb=null; this._sq=null;
+    if(cb) cb();
+  },
+  _show(){
+    const b=this._sq[this._si]; if(!b){ return; }
+    const box=$('storybox');
+    box.className='storybox'+(b.box?' '+b.box:'');
+    $('s-nm').textContent=b.nm||'';
+    $('s-who').innerHTML=ava(b.who||'fq');
+    const t=$('s-txt');
+    t.innerHTML=''; this._typing=true;
+    const raw=String(b.txt||'').replace(/\n/g,'<br>');
+    let i=0;
+    clearInterval(this._ti);
+    this._ti=setInterval(()=>{
+      i+=4; t.innerHTML=raw.slice(0,i);
+      if(i>=raw.length){ clearInterval(this._ti); this._typing=false; }
+    },14);
+    Snd.bot();
+  },
+  _next(){
+    if(!this._sq){ $('story').classList.remove('show'); return; }
+    if(this._typing){ clearInterval(this._ti); $('s-txt').innerHTML=String(this._sq[this._si].txt).replace(/\n/g,'<br>'); this._typing=false; return; }
+    this._si++;
+    if(this._si>=this._sq.length){
+      $('story').classList.remove('show');
+      const cb=this._scb; this._scb=null; this._sq=null;
+      if(cb) cb();
+      return;
+    }
+    this._show();
+  },
+  choice(title,lead,opts,cb){
+    $('c-h').textContent=title; $('c-lead').textContent=lead||'';
+    $('c-opts').innerHTML=opts.map((o,i)=>
+      `<div class="opt${o.g===1?' rec':''}" data-i="${i}">
+        <div class="oi"><svg viewBox="0 0 48 48">${MODSVG[o.i]||ava(o.av||'fq')}</svg></div>
+        <b>${esc(o.t)}</b><div class="od">${esc(o.d||'')}</div>
+        ${o.g!==undefined?`<div class="ogen g${o.g}">${o.g===0?'0代':o.g===1?'1代':o.g===2?'2代':o.g===3?'3代':'4代'}</div>`:''}
+      </div>`).join('');
+    $('choice').classList.add('show');
+    $('c-opts').querySelectorAll('.opt').forEach(el=>{
+      el.onclick=()=>{ $('choice').classList.remove('show'); cb(opts[+el.dataset.i]); };
+    });
+  }
+};
+
+//=====================================================================
+//  面板：改装 / 交易
+//=====================================================================
+let shTab='water';
+function renderSheet(){
+  const box=$('sh-body'), tabs=$('sh-tabs');
+  tabs.innerHTML=SLOTS.map(s=>`<div class="tab${shTab===s.k?' on':''}" data-t="${s.k}">${s.i} ${s.n}</div>`).join('')
+    +`<div class="tab${shTab==='deck'?' on':''}" data-t="deck">🪵 扩建</div>`;
+  tabs.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{ shTab=t.dataset.t; renderSheet(); });
+  $('sh-t').textContent = shTab==='deck'?'🪵 扩建平台':'🔧 自由改装';
+  $('sh-s').textContent = shTab==='deck'
+    ? ('当前平台 ×'+(G.decks+1)+'　捞取范围 '+Math.round(G.reach))
+    : ('模块位 9 个槽位　·　同槽位可升级为更高世代　·　过时模块效能降到 34%');
+  if(shTab==='deck'){
+    const c=DECK_COST(G.decks), ok=afford(c);
+    box.innerHTML=`<div class="grid2"><div class="mcard ${ok?'can':'no'}" id="m-deck">
+      <div class="mh"><div class="mi"><svg viewBox="0 0 48 48"><rect x="4" y="20" width="40" height="12" fill="#a9743c" stroke="#6d4520" stroke-width="2.4"/><rect x="4" y="20" width="40" height="3" fill="#c89a5b"/><path d="M12 32v9M24 32v9M36 32v9" stroke="#6d4520" stroke-width="2.6"/></svg></div>
+      <b>扩建平台 ×${G.decks+1}</b></div>
+      <div class="md">往外铺木板：<span style="color:#ffd23f;font-weight:800">捞取范围 +46</span>，平台更宽能站更多模块与人。<br>不占槽位，可无限扩建。</div>
+      <div class="mcost">${Object.keys(c).map(k=>`<span class="${(G.res[k]|0)>=c[k]?'ok':'no'}">${RICON[k]}${c[k]}</span>`).join('')}</div></div></div>`;
+    const el=$('m-deck'); if(el) el.onclick=()=>{ if(buyDeck()) renderSheet(); };
+    return;
+  }
+  const list=(SLOTS_OF[shTab]||[]).slice().sort((a,b)=>a.gen-b.gen);
+  const cur=G.slots[shTab];
+  box.innerHTML=`<div class="grid2">`+list.map(m=>{
+    const own=cur===m.id;
+    const old=isOld(m.id);
+    const ok=afford(m.cost);
+    const down = cur && MM[cur].gen>m.gen;
+    let cls='mcard'+(own?' done':(ok&&!down?' can':' no'));
+    let tag = own?'<div class="mtag">在用</div>' : (down?'<div class="mtag out">不如当前</div>':'<div class="mtag gen">'+m.gen+'代</div>');
+    const cost=Object.keys(m.cost).length? Object.keys(m.cost).map(k=>
+      `<span class="${(G.res[k]|0)>=m.cost[k]?'ok':'no'}">${RICON[k]}${m.cost[k]}</span>`).join('') : '<span class="ok">免费</span>';
+    return `<div class="${cls}" data-id="${m.id}">${tag}
+      <div class="mh"><div class="mi"><svg viewBox="0 0 48 48">${MODSVG[m.id]||''}</svg></div><b>${m.n}</b></div>
+      <div class="md">${m.desc}<br><span style="color:#ffd23f;font-weight:800">${m.eff}</span>${m.use?`<span style="color:#80d8ff"> · 耗电 ${m.use}/s</span>`:''}</div>
+      <div class="mcost">${cost}</div></div>`;
+  }).join('')+`</div>`;
+  box.querySelectorAll('.mcard').forEach(c=>c.onclick=()=>{ install(c.dataset.id); });
+}
+function renderTrade(){
+  const box=$('sh-body'), tabs=$('sh-tabs');
+  tabs.innerHTML=''; $('sh-t').textContent='🏴 势力交易';
+  $('sh-s').textContent='商船就在旁边 —— 末日海面上，谁控制了水，谁就控制了人';
+  const f=G.boats.length?G.boats[0].f:null;
+  if(!f){ box.innerHTML='<div style="text-align:center;color:#9fd7ef;font-size:13px;padding:24px 0">附近没有商船。<br>等下一艘靠过来，或者继续打捞。</div>'; return; }
+  box.innerHTML=`<div class="grid2"><div class="fcard" style="grid-column:1/-1">
+    <h4><span style="color:${f.c}">${f.i}</span> ${f.n}</h4><p>${f.desc}</p>
+    <div class="frow">${f.buy.map((b,i)=>`<button class="fbtn buy" data-k="buy" data-i="${i}">${b.t} → ${Object.keys(b.give).map(k=>RICON[k]+b.give[k]).join(' ')}</button>`).join('')}
+    ${f.sell.map((s,i)=>`<button class="fbtn sell" data-k="sell" data-i="${i}">${s.t}</button>`).join('')}</div>
+  </div></div>`;
+  box.querySelectorAll('.fbtn').forEach(btn=>{
+    btn.onclick=()=>{
+      const k=btn.dataset.k, i=+btn.dataset.i;
+      if(k==='buy'){
+        const b=f.buy[i];
+        if(!afford(b.give)){ Snd.deny(); toast('资源不够','warn'); return; }
+        pay(b.give);
+        for(const rk in b.get){ if(rk==='water'){ G.water=CFG.waMax; } else if(rk==='food'){ G.food=CFG.foMax; } else { G.res[rk]=(G.res[rk]|0)+b.get[rk]; bump(rk); } }
+        Snd.coin(); toast('✅ 交易完成','good');
+      } else {
+        const s=f.sell[i];
+        const keys=Object.keys(s.get||{});
+        let ok=true; for(const rk in (s.get||{})) if((G.res[rk]|0)<s.get[rk]) ok=false;
+        if(!ok){ Snd.deny(); toast('货不够','warn'); return; }
+        for(const rk in (s.get||{})){ G.res[rk]-=s.get[rk]; }
+        const pay_rk=pick(['wood','iron','plas','rope','elec']);
+        const amt=ri(6,14); G.res[pay_rk]+=amt; bump(pay_rk);
+        Snd.coin(); toast('💰 卖出，换回 '+RICON[pay_rk]+amt,'good');
+      }
+      renderTrade(); UI.renderAll();
+    };
+  });
+}
+
+//=====================================================================
+//  输入
+//=====================================================================
+function toLogic(e){
+  const r=cv.getBoundingClientRect();
+  return {x:(e.clientX-r.left)/r.width*W, y:(e.clientY-r.top)/r.height*H};
+}
+cv.addEventListener('pointerdown',e=>{
+  if(!G||!G.running||G.paused||G.over) return;
+  if(UI.busy()) return;
+  Snd.init();
+  const p=toLogic(e);
+  // 深潜宝箱
+  if(G.dive){
+    for(const c of G.dive.chests){
+      if(c.open) continue;
+      if(Math.abs(p.x-c.x)<34&&Math.abs(p.y-c.y)<32){
+        c.open=true; G.res[c.k]+=c.a; G.dive.gain+=c.a; bump(c.k);
+        part(c.x,c.y,14,'#ffd23f',180,.7);
+        ftext(c.x,c.y-24,'+'+c.a+' '+RICON[c.k],'#ffd23f',17);
+        Snd.coin(); return;
+      }
+    }
+    return;
+  }
+  // 漩涡
+  if(G.diveSpot&&Math.abs(p.x-G.diveSpot.x)<G.diveSpot.r&&Math.abs(p.y-G.diveSpot.y)<G.diveSpot.r){ startDive(); return; }
+  // BOSS
+  if(G.boss){
+    const b=G.boss;
+    if(Math.abs(p.x-b.x)<150&&Math.abs(p.y-b.y)<110){ hitBoss(CFG.clickDmg); return; }
+  }
+  // 猛兽
+  for(let i=G.beasts.length-1;i>=0;i--){
+    const b=G.beasts[i]; if(b.dead) continue;
+    if(Math.abs(p.x-b.x)<50&&Math.abs(p.y-b.y)<48){ hitBeast(b,CFG.clickDmg); return; }
+  }
+  // 幸存者
+  for(let i=G.survivors.length-1;i>=0;i--){
+    const s=G.survivors[i]; if(s.dead) continue;
+    if(Math.abs(p.x-s.x)<38&&Math.abs(p.y-s.y)<54){ rescue(s); return; }
+  }
+  // 商船
+  for(let i=0;i<G.boats.length;i++){
+    const b=G.boats[i];
+    if(Math.abs(p.x-b.x)<70&&Math.abs(p.y-b.y)<60){
+      $('b-tradedot').classList.add('hidden');
+      renderTrade(); $('sheet').classList.add('show'); return;
+    }
+  }
+  // 漂浮物
+  let best=null,bd=1e9;
+  G.floaters.forEach(f=>{
+    if(f.caught) return;
+    const d=Math.hypot(p.x-f.x,p.y-f.y);
+    if(d<46&&d<bd){ bd=d; best=f; }
+  });
+  if(best){ tryCatch(best); return; }
+  // 水花
+  if(p.y>SEA-10){ FX.part(p.x,p.y,8,'#bfe9ff',130,.45); Snd.tone(520,0.07,'sine',0.05,880); }
+});
+function hitBoss(d){
+  const b=G.boss; if(!b) return;
+  b.hp-=d; b.hurt=0.15; G.hitStop=0.05;
+  part(b.x+rnd(-70,70),b.y-20,7,'#ffd6a5',160,.5);
+  ftext(b.x+rnd(-50,50),b.y-70,'-'+d,'#ffd23f',17);
+  Snd.hit();
+  if(b.hp<=0) onBossDown(b);
+}
+
+//=====================================================================
+//  流程
+//=====================================================================
+let MODE=0;
+function startGame(){
+  G=newGame(MODE);
+  G.running=true;
+  G.mul={drain:1+MODE*0.14, dmg:1+MODE*0.22};
+  $('start').classList.add('hide');
+  $('modal').classList.remove('show');
+  $('sheet').classList.remove('show');
+  $('alarm').classList.remove('on');
+  $('scan').classList.toggle('on',MODE===1);
+  $('live').classList.toggle('on',MODE===1);
+  UI.buildHUD(); UI.tick(true);
+  Snd.init(); Snd.musicStart(0);
+  Snd.start();
+  // 开局剧情
+  const lead=[
+    {who:'fq', nm:'肥强', txt:'房子给淹了，空调外机装我家里，床板还顶到我脸上。\n……OK。……OK。……OK。', box:'fq'},
+    {who:'ashui', nm:'阿水', txt:'陆地沉了。海就是全部。<em>疯狂水世界，启动！</em>', box:''}
+  ];
+  if(MODE===1) lead.push({who:'nb',nm:'弹幕',txt:'（广告模式：弹幕已开启，暂停已禁用。撑住。）',box:''});
+  let opened=false;
+  const openChoice=()=>{
+    if(opened) return; opened=true;
+    sub('⚡ 开局一个移动公厕 —— 打捞物资，活下去');
+    setTimeout(()=>sub(''),3200);
+    // 开局选择
+    choice('末日开局，你先捞哪个？','三个都能活，但只有一个是版本答案。',
+      [
+        {t:'海水过滤器',d:'净水即续命。1 代，广告里的绝对主角。',i:'filter',g:1,rec:1},
+        {t:'捕鱼器',d:'先填饱肚子。但没水你撑不过第三天。',i:'fisher',g:1},
+        {t:'黄金炮台',d:'火力党的浪漫。没水没电，炮就是块废铁。',i:'cannon',g:2}
+      ],
+      o=>{
+        if(o.i==='filter'){ G.slots.water='filter'; G.built.filter=1; G.water=CFG.waMax; }
+        else if(o.i==='fisher'){ G.slots.food='fisher'; G.built.fisher=1; G.food=CFG.foMax; }
+        else { G.slots.def='cannon'; G.built.cannon=1; G.res.iron=0; }
+        Snd.build(); Snd.start(); G.flash=0.55; G.hitStop=0.09;
+        toast('🎁 开局获得【'+o.t+'】','gold');
+        opened=true;
+        // 立刻铺开物资，避免开局空场
+        for(let k=0;k<4;k++){
+          spawnFloater();
+          const f=G.floaters[G.floaters.length-1];
+          f.x = baseX() + rnd(-G.reach*0.9, G.reach*0.9);
+          f.vx *= 0.35;
+        }
+        G.spawnF=0.8;
+        G.spawnB=CFG.beastFirst;
+        ftext(baseX(), SEA-150, '疯狂水世界！启动！', '#ffd23f', 30);
+        sub('👆 点击海面漂来的物资开始打捞');
+        setTimeout(()=>sub(''),3600);
+        UI.tick(true);
+      });
+  };
+  try{
+    story(lead, openChoice);
+  }catch(e){
+    // 剧情系统异常时，直接进游戏，绝不让玩家卡在开场
+    $('story').classList.remove('show');
+    $('choice').classList.remove('show');
+    opened=true;
+    if(!G.slots.water){ G.slots.water='filter'; G.built.filter=1; }
+    sub('⚡ 开局一个移动公厕 —— 打捞物资，活下去');
+    UI.tick(true);
+  }
+}
+function winGame(){
+  G.over=true; G.running=false;
+  Snd.musicStop(); Snd.zone();
+  const s=score(), r=rank(s); saveBest(s,r);
+  const mm=Math.floor(G.gt/60), ss=Math.floor(G.gt%60);
+  $('modal-card').innerHTML=
+    '<div class="rankbig">'+r+'</div>'+
+    '<h2 style="margin-top:6px">🌊 绿洲在前方</h2>'+
+    '<div class="sub">陈浩的旗舰沉了，潮汐净水塔归你。<br>这片海，从此不再只有一种活法。</div>'+
+    '<div class="res-grid">'+
+      '<div class="res-i"><b>'+s+'</b><span>最终评分</span></div>'+
+      '<div class="res-i"><b>第 '+CHAPS[Math.min(G.chap,4)].day+' 天</b><span>抵达天数</span></div>'+
+      '<div class="res-i"><b>'+mm+':'+String(ss).padStart(2,'0')+'</b><span>存活时长</span></div>'+
+      '<div class="res-i"><b>'+Object.keys(G.slots).length+'</b><span>装配模块</span></div>'+
+      '<div class="res-i"><b>'+G.ppl.length+'</b><span>幸存者</span></div>'+
+      '<div class="res-i"><b>'+G.kills+'</b><span>击退猛兽</span></div>'+
+    '</div>'+
+    '<button class="bigbtn" id="b-again">🔁 再来一局</button>'+
+    '<button class="gbtn" id="b-home">回到标题</button>';
+  $('modal').classList.add('show');
+  $('b-again').onclick=()=>{ $('modal').classList.remove('show');
+    try{ startGame(); }catch(e){ location.reload(); } };
+  $('b-home').onclick=()=>{ $('modal').classList.remove('show'); $('start').classList.remove('hide'); };
+}
+function gameOver(reason){
+  if(G.over) return;
+  G.over=true; G.running=false; Snd.musicStop(); Snd.die(); G.shake=28; G.flash=0.4;
+  const s=score(), r=rank(s); saveBest(s,r);
+  const mm=Math.floor(G.gt/60), ss=Math.floor(G.gt%60);
+  const hard=G.mode===2;
+  $('modal-card').innerHTML=
+    '<div class="rankbig">'+r+'</div>'+
+    '<h2 style="margin-top:6px">据点崩塌</h2>'+
+    '<div class="sub">'+reason+'<br>'+(hard?'<b style="color:#ff6b35">硬核模式：物资全部清零。</b>':'下一局，从一块木板重新开始。')+'</div>'+
+    '<div class="res-grid">'+
+      '<div class="res-i"><b>'+s+'</b><span>最终评分</span></div>'+
+      '<div class="res-i"><b>第 '+Math.round(G.dayF)+' 天</b><span>存活天数</span></div>'+
+      '<div class="res-i"><b>'+mm+':'+String(ss).padStart(2,'0')+'</b><span>存活时长</span></div>'+
+      '<div class="res-i"><b>'+Object.keys(G.slots).length+'</b><span>装配模块</span></div>'+
+      '<div class="res-i"><b>'+G.ppl.length+'</b><span>幸存者</span></div>'+
+      '<div class="res-i"><b>'+G.gain+'</b><span>累计收获</span></div>'+
+    '</div>'+
+    '<div style="font-size:11.5px;color:#9fd7ef;line-height:1.7;margin-bottom:4px">'+
+      pick(['下一条广告：肥强又被赶去住拼好房了。','下一条广告：邻居把空调外机装进了他家。','下一条广告：鉴定员说这台设备已经过时。','下一条广告：他终于打捞到海水过滤器了。'])+
+    '</div>'+
+    '<button class="bigbtn" id="b-again">🔁 再来一局</button>'+
+    '<button class="gbtn" id="b-home">回到标题</button>';
+  $('modal').classList.add('show');
+  $('b-again').onclick=()=>{ $('modal').classList.remove('show');
+    try{ startGame(); }catch(e){ location.reload(); } };
+  $('b-home').onclick=()=>{ $('modal').classList.remove('show'); $('start').classList.remove('hide'); };
+}
+function score(){
+  let s=0;
+  for(const k in G.slots){ const m=MM[G.slots[k]]; if(m) s+=90+m.gen*70; }
+  s+=Object.keys(G.built).reduce((a,k)=>a+ (G.built[k]||0)*22,0);
+  s+=G.ppl.length*95;
+  s+=(G.hp/G.hpmax)*210;
+  s+=RK.reduce((a,k)=>a+G.res[k]*(k==='core'?22:k==='elec'?5:1.1),0);
+  s+=G.gt/60*58;
+  s+=G.kills*15;
+  s+=G.chap*420;
+  s+=G.decks*45;
+  if(G.flags.chenDead) s+=1600;
+  if(G.flags.dove) s+=140;
+  return Math.round(s);
+}
+function rankOf(s){ return s<700?'C' : s<1600?'B' : s<2900?'A' : s<4600?'S' : 'SS'; }
+function rank(s){ return rankOf(s); }
+function saveBest(s,r){
+  try{
+    let b=JSON.parse(localStorage.getItem('cws_best2')||'null')||{s:0,r:'-',d:1};
+    if(s>b.s){ b={s:s,r:r,d:Math.round(G.dayF)}; localStorage.setItem('cws_best2',JSON.stringify(b)); }
+    showBest(b);
+  }catch(e){}
+}
+function showBest(b){
+  $('best').textContent=b&&b.s>0?('🏆 最佳 '+b.r+' · '+b.s+' 分 · 第 '+b.d+' 天'):'';
+}
+
+//=====================================================================
+//  循环 / 启动
+//=====================================================================
+function resize(){
+  DPR=Math.min(2,window.devicePixelRatio||1);
+  cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
+  $('rotate').classList.toggle('show', window.innerHeight>window.innerWidth && window.innerWidth<820);
+}
+let last=0;
+function loop(ts){
+  requestAnimationFrame(loop);
+  const dt=Math.min(0.05,(ts-last)/1000||0); last=ts;
+  if(!G) return;
+  // 看门狗：标题已隐藏但游戏没在跑（剧情/选择异常中断等）→ 强制拉起
+  if(!G.running && !G.paused && !G.over && $('start').classList.contains('hide')){
+    try{
+      $('story').classList.remove('show');
+      $('choice').classList.remove('show');
+      if(!G.mul) G.mul={drain:1+MODE*0.14,dmg:1+MODE*0.22};
+      if(!G.slots.water){ G.slots.water='filter'; G.built.filter=1; }
+      G.running=true; UI.tick(true);
+    }catch(e){}
+  }
+  if(G.running) update(dt);
+  if(G.__sadT>0){ G.__sadT-=dt; if(G.__sadT<=0) G.player.face='happy'; }
+  draw(dt);
+}
+// 事件
+window.addEventListener('error',function(e){
+  var b=$('errbox'); if(!b) return;
+  $('errtxt').textContent=(e.message||'未知错误')+' ('+(e.lineno||'?')+')';
+  b.style.display='block';
+});
+$('b-start').onclick=function(){
+  var btn=$('b-start');
+  btn.classList.add('busy'); btn.textContent='正在启航…';
+  try{ Snd.init(); }catch(err){}
+  try{ startGame(); }
+  catch(err){
+    btn.classList.remove('busy'); btn.textContent='开始漂流 →';
+    var b=$('errbox'); if(b){ $('errtxt').textContent='启动失败：'+((err&&err.message)||err); b.style.display='block'; }
+    try{
+      if(!G) G=newGame(MODE);
+      G.running=true; G.mul={drain:1+MODE*0.14,dmg:1+MODE*0.22};
+      $('start').classList.add('hide');
+      UI.buildHUD(); UI.tick(true);
+    }catch(e2){}
+  }
+};
+$('b-build').onclick=()=>{ if(!G||!G.running)return; shTab='water'; renderSheet(); $('sheet').classList.add('show'); };
+$('b-trade').onclick=()=>{ if(!G||!G.running)return; renderTrade(); $('sheet').classList.add('show'); };
+$('b-close').onclick=()=>$('sheet').classList.remove('show');
+$('sheet').addEventListener('click',e=>{ if(e.target===$('sheet')) $('sheet').classList.remove('show'); });
+$('story').addEventListener('click',e=>{
+  if(e.target && e.target.id==='s-skip'){ e.stopPropagation(); UI.skipStory(); return; }
+  UI._next();
+});
+$('s-skip').addEventListener('click',e=>{ e.stopPropagation(); UI.skipStory(); });
+$('b-pause').onclick=()=>{
+  if(!G||!G.running) return;
+  if(G.mode===1){ toast('广告模式禁止暂停','warn'); return; }
+  pauseGame(!G.paused);
+};
+$('b-snd').onclick=()=>{ Snd.on=!Snd.on; $('b-snd').textContent=Snd.on?'🔊':'🔇'; $('b-snd').classList.toggle('off',!Snd.on);
+  if(Snd.busMus) Snd.busMus.gain.value=Snd.on?0.16:0; };
+document.querySelectorAll('.mdbtn').forEach(b=>{
+  b.onclick=()=>{ document.querySelectorAll('.mdbtn').forEach(x=>x.classList.remove('on')); b.classList.add('on'); MODE=+b.dataset.m; };
+});
+function pauseGame(on){
+  G.paused=on;
+  if(on){
+    Snd.musicStop();
+    $('modal-card').innerHTML='<h2>⏸ 已暂停</h2><div class="sub">海面暂时平静了。</div>'+
+      '<button class="bigbtn" id="b-resume">继续漂流</button>'+
+      '<button class="gbtn" id="b-quit">放弃这局</button>';
+    $('modal').classList.add('show');
+    $('b-resume').onclick=()=>{ $('modal').classList.remove('show'); G.paused=false; Snd.musicStart(CHAPS[G.chap]?CHAPS[G.chap].mood:2); };
+    $('b-quit').onclick=()=>{ $('modal').classList.remove('show'); G.paused=false; gameOver('你放弃了这局。'); };
+  } else { $('modal').classList.remove('show'); }
+}
+window.addEventListener('resize',resize);
+window.addEventListener('orientationchange',()=>setTimeout(resize,300));
+document.addEventListener('visibilitychange',()=>{ if(document.hidden&&G&&G.running&&!G.paused&&G.mode!==1) pauseGame(true); });
+window.addEventListener('keydown',e=>{
+  if(!G) return;
+  if(e.code==='Space'){ e.preventDefault();
+    if(UI.busy()){ if($('story').classList.contains('show')) UI._next(); return; }
+    if(G.running&&G.mode!==1) pauseGame(!G.paused); }
+  if(e.code==='KeyB'&&G.running){ shTab='water'; renderSheet(); $('sheet').classList.add('show'); }
+  if(e.code==='KeyT'&&G.running){ renderTrade(); $('sheet').classList.add('show'); }
+  if(e.code==='Escape'){ $('sheet').classList.remove('show'); }
+});
+window.CWS={ get G(){return G}, start:startGame, install:install, build:buyDeck, score:score };
+resize();
+G=newGame(0); G.mul={drain:1,dmg:1};
+UI.buildHUD();
+try{ showBest(JSON.parse(localStorage.getItem('cws_best2')||'null')); }catch(e){}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
